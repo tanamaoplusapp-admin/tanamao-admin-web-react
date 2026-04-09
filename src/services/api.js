@@ -1,38 +1,47 @@
 // src/services/api.js
 import axios from "axios";
 
+const BASE_URL =
+  import.meta.env.VITE_API_URL || "https://tanamao-backend.onrender.com/api";
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 
 // ===============================
-// 🔐 TOKEN ADMIN (MANUAL)
+// 🔐 TOKEN ADMIN
 // ===============================
 export function setAdminToken(token) {
-  if (!token) return;
-  localStorage.setItem("adminToken", token);
+  if (!token) {
+    localStorage.removeItem("admin_token");
+    delete API.defaults.headers.common.Authorization;
+    return;
+  }
+
+  localStorage.setItem("admin_token", token);
   API.defaults.headers.common.Authorization = `Bearer ${token}`;
 }
 
 export function clearAdminToken() {
-  localStorage.removeItem("adminToken");
+  localStorage.removeItem("admin_token");
   delete API.defaults.headers.common.Authorization;
 }
 
 // ===============================
-// 🔁 INTERCEPTOR GLOBAL (CORREÇÃO)
+// 🔁 INTERCEPTOR GLOBAL
 // ===============================
 API.interceptors.request.use(
   (config) => {
-    // ❌ NÃO enviar token no login
+    // não enviar token no login
     if (config.url?.includes("/auth/login")) {
-      delete config.headers.Authorization;
+      if (config.headers?.Authorization) {
+        delete config.headers.Authorization;
+      }
       return config;
     }
 
-    // ✅ Reaplica token automaticamente
-    const token = localStorage.getItem("adminToken");
+    const token = localStorage.getItem("admin_token");
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
