@@ -29,10 +29,9 @@ export function AuthProvider({ children }) {
 
     const { token, user } = data;
 
-    if (!token || user?.role !== "admin") {
-      throw new Error("Usuário não autorizado");
-    }
-
+   if (!token || String(user?.role).toLowerCase() !== "admin") {
+  throw new Error("Usuário não autorizado");
+}
     localStorage.setItem("admin_token", token);
     localStorage.setItem("admin_user", JSON.stringify(user));
     setAdminToken(token);
