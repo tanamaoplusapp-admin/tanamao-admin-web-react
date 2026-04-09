@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import API, { setAdminToken } from "../services/api";
+import API, { setAdminToken, clearAdminToken } from "../services/api";
+import { isAdminUser } from "../auth/adminGuard";
 
 const AuthContext = createContext(null);
 
@@ -13,8 +14,22 @@ export function AuthProvider({ children }) {
     const user = localStorage.getItem("admin_user");
 
     if (token && user) {
-      setAdminToken(token);
-      setAdmin(JSON.parse(user));
+      try {
+        const parsedUser = JSON.parse(user);
+
+        if (isAdminUser(parsedUser)) {
+          setAdminToken(token);
+          setAdmin(parsedUser);
+        } else {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_user");
+          clearAdminToken();
+        }
+      } catch {
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_user");
+        clearAdminToken();
+      }
     }
 
     setLoading(false);
@@ -27,11 +42,12 @@ export function AuthProvider({ children }) {
       password,
     });
 
-    const { token, user } = data;
+    const { token, user } = data || {};
 
-   if (!token || String(user?.role).toLowerCase() !== "admin") {
-  throw new Error("Usuário não autorizado");
-}
+    if (!token || !isAdminUser(user)) {
+      throw new Error("Usuário não autorizado");
+    }
+
     localStorage.setItem("admin_token", token);
     localStorage.setItem("admin_user", JSON.stringify(user));
     setAdminToken(token);
@@ -41,7 +57,7 @@ export function AuthProvider({ children }) {
   function logout() {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
-    setAdminToken(null);
+    clearAdminToken();
     setAdmin(null);
   }
 
