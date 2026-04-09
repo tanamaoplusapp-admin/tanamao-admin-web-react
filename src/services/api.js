@@ -3,18 +3,15 @@ import axios from "axios";
 
 const rawBaseUrl = String(import.meta.env.VITE_API_URL || "").trim();
 
-// protege contra env malformada tipo:
-// "VITE_API_URL="https://tanamao-backend-plyd.onrender.com"
 const normalizedBaseUrl = rawBaseUrl.startsWith("VITE_API_URL=")
   ? rawBaseUrl.replace("VITE_API_URL=", "")
   : rawBaseUrl;
 
-// fallback final seguro
 const BASE_URL =
   normalizedBaseUrl || "https://tanamao-backend-plyd.onrender.com";
 
 const API = axios.create({
-  baseURL: BASE_URL,
+  baseURL: `${BASE_URL}/api`, // ← AQUI está a correção
   withCredentials: true,
 });
 
@@ -42,7 +39,6 @@ export function clearAdminToken() {
 // ===============================
 API.interceptors.request.use(
   (config) => {
-    // não enviar token no login
     if (config.url?.includes("/auth/login")) {
       if (config.headers?.Authorization) {
         delete config.headers.Authorization;
