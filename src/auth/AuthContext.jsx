@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
 
   // 🔐 login centralizado
   async function login({ email, password }) {
-  const { data } = await API.post("/auth/login", {
+  const { data } = await API.post("/api/auth/login", {
     email,
     password,
   });
