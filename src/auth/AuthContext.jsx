@@ -37,22 +37,26 @@ export function AuthProvider({ children }) {
 
   // 🔐 login centralizado
   async function login({ email, password }) {
-    const { data } = await API.post("/auth/login", {
-      email,
-      password,
-    });
+  const { data } = await API.post("/auth/login", {
+    email,
+    password,
+  });
 
-    const { token, user } = data || {};
+  const { token, user } = data || {};
 
-    if (!token || !isAdminUser(user)) {
-      throw new Error("Usuário não autorizado");
-    }
-
-    localStorage.setItem("admin_token", token);
-    localStorage.setItem("admin_user", JSON.stringify(user));
-    setAdminToken(token);
-    setAdmin(user);
+  if (!data?.ok || !token) {
+    throw new Error("Usuário não autorizado");
   }
+
+  if (String(user?.role).toLowerCase() !== "admin") {
+    throw new Error("Usuário não autorizado");
+  }
+
+  localStorage.setItem("admin_token", token);
+  localStorage.setItem("admin_user", JSON.stringify(user));
+  setAdminToken(token);
+  setAdmin(user);
+}
 
   function logout() {
     localStorage.removeItem("admin_token");
