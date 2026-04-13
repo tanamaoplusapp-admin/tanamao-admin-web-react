@@ -71,7 +71,7 @@ export default function Thread() {
       });
     }
 
-    socketInstance.emit("join_chat", id);
+    socketInstance.emit("entrar_chat", id);
 
     const onNewMessage = (message) => {
       const messageChatId =
