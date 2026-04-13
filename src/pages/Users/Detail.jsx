@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-
+import { useParams } from "react-router-dom";
 import Page from "../../layout/Page";
 import API from "../../services/api";
-import { useNavigate, useParams } from "react-router-dom";
 
 function Actions({ children }) {
   return <div style={actions}>{children}</div>;
@@ -49,7 +48,6 @@ export default function UserDetail() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [trialDate, setTrialDate] = useState("");
-  const navigate = useNavigate();
 
   const avatar =
     user?.photoUrl ||
@@ -189,29 +187,9 @@ export default function UserDetail() {
     }
   }
 
- async function openChat() {
-  try {
-    setActionLoading(true);
-
-    const res = await API.post("/chat", {
-      userId: user._id,
-    });
-
-    const chatId = res.data?._id || res.data?.chatId;
-
-    if (!chatId) {
-      alert("Não foi possível abrir o chat.");
-      return;
-    }
-
-    navigate(`/conversations/${chatId}`);
-  } catch (e) {
-    console.error(e);
-    alert("Erro ao abrir chat.");
-  } finally {
-    setActionLoading(false);
+  async function openChat() {
+    window.location.href = `/chat/${user._id}`;
   }
-}
 
   if (loading) {
     return <Page title="Usuário">Carregando...</Page>;
