@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+
 import Page from "../../layout/Page";
 import API from "../../services/api";
 import { useNavigate, useParams } from "react-router-dom";
