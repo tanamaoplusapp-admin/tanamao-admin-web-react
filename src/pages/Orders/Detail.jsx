@@ -19,7 +19,7 @@ export default function OrderDetail() {
       setLoading(true);
       setError(null);
 
-      const res = await API.get(`/servicos/${id}`);
+      const res = await API.get(`/admin/servicos/${id}`);
       const data = res.data;
 
       setService(data?.service || data?.servico || data || null);

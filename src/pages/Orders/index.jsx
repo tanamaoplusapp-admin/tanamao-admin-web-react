@@ -28,7 +28,7 @@ export default function Orders() {
       setLoading(true);
       setError(null);
 
-      const res = await API.get("/servicos");
+      const res = await API.get("/admin/servicos");
       const data = normalizeServicesResponse(res.data);
 
       setServices(data);
@@ -54,27 +54,34 @@ export default function Orders() {
 
       list = list.filter((service) => {
         const id = String(service._id || "").toLowerCase();
+
         const cliente = String(
           service.cliente?.name ||
             service.cliente?.nome ||
             service.clienteNome ||
             ""
         ).toLowerCase();
+
         const profissional = String(
           service.profissional?.name ||
             service.profissional?.nome ||
             service.profissionalNome ||
             ""
         ).toLowerCase();
+
         const categoria = String(service.categoria || "").toLowerCase();
         const descricao = String(service.descricao || "").toLowerCase();
+        const tipo = String(service.tipoServico || "").toLowerCase();
+        const statusText = String(service.status || "").toLowerCase();
 
         return (
           id.includes(term) ||
           cliente.includes(term) ||
           profissional.includes(term) ||
           categoria.includes(term) ||
-          descricao.includes(term)
+          descricao.includes(term) ||
+          tipo.includes(term) ||
+          statusText.includes(term)
         );
       });
     }
@@ -91,10 +98,7 @@ export default function Orders() {
   }
 
   return (
-    <Page
-      title="Serviços"
-      subtitle="Central completa de serviços Tanamão+"
-    >
+    <Page title="Serviços" subtitle="Central completa de serviços Tanamão+">
       <div style={summaryGrid}>
         <SummaryCard label="Abertos" value={countByGroup(services, "abertos")} />
         <SummaryCard label="Pendentes" value={countByStatus(services, "pendente")} />
@@ -103,11 +107,12 @@ export default function Orders() {
         <SummaryCard label="Pagos" value={countByStatus(services, "pago")} />
         <SummaryCard label="Finalizados" value={countByStatus(services, "finalizado")} />
         <SummaryCard label="Cancelados" value={countByStatus(services, "cancelado")} />
+        <SummaryCard label="Expirados" value={countByStatus(services, "expirado")} />
       </div>
 
       <div style={toolbar}>
         <input
-          placeholder="Buscar por ID, cliente, prestador ou categoria..."
+          placeholder="Buscar por ID, cliente, prestador, categoria ou status..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={input}
@@ -153,15 +158,15 @@ export default function Orders() {
           <tbody>
             {filtered.map((service) => (
               <tr key={service._id}>
-                <td style={td}>{shortId(service._id)}</td>
+                <td style={td} title={service._id}>
+                  {shortId(service._id)}
+                </td>
 
                 <td style={td}>
                   <TypeBadge type={service.tipoServico} />
                 </td>
 
-                <td style={td}>
-                  {service.categoria || "-"}
-                </td>
+                <td style={td}>{service.categoria || "-"}</td>
 
                 <td style={td}>
                   {service.cliente?.name ||
@@ -185,9 +190,7 @@ export default function Orders() {
                   <StatusBadge status={service.status} />
                 </td>
 
-                <td style={td}>
-                  {formatDateTime(service.createdAt)}
-                </td>
+                <td style={td}>{formatDateTime(service.createdAt)}</td>
 
                 <td style={td}>
                   <button
@@ -203,9 +206,7 @@ export default function Orders() {
         </table>
 
         {filtered.length === 0 && (
-          <div style={{ padding: 20 }}>
-            Nenhum serviço encontrado
-          </div>
+          <div style={{ padding: 20 }}>Nenhum serviço encontrado</div>
         )}
       </div>
     </Page>
