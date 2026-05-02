@@ -7,13 +7,23 @@ function Actions({ children }) {
   return <div style={actions}>{children}</div>;
 }
 
-function Action({ label, onClick, danger, warn }) {
+function Action({ label, onClick, danger, warn, disabled }) {
   let bg = "#14532D";
   if (warn) bg = "#F59E0B";
   if (danger) bg = "#DC2626";
+  if (disabled) bg = "#9CA3AF";
 
   return (
-    <button onClick={onClick} style={{ ...btn, background: bg }}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        ...btn,
+        background: bg,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.75 : 1,
+      }}
+    >
       {label}
     </button>
   );
@@ -36,7 +46,7 @@ function Info({ label, value }) {
   return (
     <div>
       <div style={labelStyle}>{label}</div>
-      <div style={valueStyle}>{value || "—"}</div>
+      <div style={valueStyle}>{formatValue(value)}</div>
     </div>
   );
 }
@@ -45,9 +55,9 @@ export default function UserDetail() {
   const { id } = useParams();
 
   const [user, setUser] = useState(null);
+  const [serviceStats, setServiceStats] = useState(getEmptyServiceStats());
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [trialDate, setTrialDate] = useState("");
 
   const avatar =
     user?.photoUrl ||
@@ -65,13 +75,47 @@ export default function UserDetail() {
     try {
       setLoading(true);
 
-      const res = await API.get(`/admin/users/${id}`);
-      const userData = res.data?.user || res.data;
+      const [userRes, servicosRes] = await Promise.allSettled([
+        API.get(`/admin/users/${id}`),
+        API.get("/servicos"),
+      ]);
 
-      setUser(userData);
+      if (userRes.status !== "fulfilled") {
+        throw userRes.reason;
+      }
+
+      const userData = userRes.value.data?.user || userRes.value.data;
+      setUser(userData || null);
+
+      if (servicosRes.status === "fulfilled") {
+        const servicos = normalizeServicosResponse(servicosRes.value.data);
+
+        const servicosDoProfissional = servicos.filter((servico) => {
+          const profissionalId =
+            servico?.profissional?._id ||
+            servico?.profissional?.id ||
+            servico?.profissional ||
+            servico?.profissionalId ||
+            servico?.prestador?._id ||
+            servico?.prestador?.id ||
+            servico?.prestador ||
+            servico?.prestadorId;
+
+          return String(profissionalId) === String(id);
+        });
+
+        setServiceStats(calculateServiceStats(servicosDoProfissional));
+      } else {
+        console.error(
+          "[UserDetail] Erro ao carregar /servicos:",
+          servicosRes.reason
+        );
+        setServiceStats(getEmptyServiceStats());
+      }
     } catch (e) {
-      console.error(e);
+      console.error("[UserDetail] Erro ao carregar usuário:", e);
       setUser(null);
+      setServiceStats(getEmptyServiceStats());
     } finally {
       setLoading(false);
     }
@@ -122,6 +166,7 @@ export default function UserDetail() {
     const exp = new Date(user.acessoExpiraEm);
     const now = new Date();
 
+    if (Number.isNaN(exp.getTime())) return "—";
     if (exp < now) return "🔴 Expirado";
 
     return "🟢 Ativo até " + exp.toLocaleDateString("pt-BR");
@@ -139,6 +184,9 @@ export default function UserDetail() {
         ...prev,
         status,
       }));
+    } catch (e) {
+      console.error("[UserDetail] Erro ao alterar status:", e);
+      alert("Erro ao alterar status do usuário.");
     } finally {
       setActionLoading(false);
     }
@@ -152,22 +200,10 @@ export default function UserDetail() {
 
       await API.patch(`/admin/users/${id}/extend-access`, { days });
 
-      load();
-    } finally {
-      setActionLoading(false);
-    }
-  }
-
-  async function handleFinancialAction(action) {
-    try {
-      setActionLoading(true);
-
-      await API.patch(`/admin/users/${id}/financial-status`, {
-        action,
-        trialEndsAt: trialDate,
-      });
-
-      load();
+      await load();
+    } catch (e) {
+      console.error("[UserDetail] Erro ao liberar acesso:", e);
+      alert("Erro ao liberar acesso.");
     } finally {
       setActionLoading(false);
     }
@@ -181,13 +217,17 @@ export default function UserDetail() {
 
       await API.patch(`/admin/users/${id}/expire-access`);
 
-      load();
+      await load();
+    } catch (e) {
+      console.error("[UserDetail] Erro ao bloquear acesso:", e);
+      alert("Erro ao bloquear acesso.");
     } finally {
       setActionLoading(false);
     }
   }
 
-  async function openChat() {
+  function openChat() {
+    if (!user?._id) return;
     window.location.href = `/chat/${user._id}`;
   }
 
@@ -212,6 +252,7 @@ export default function UserDetail() {
               marginBottom: 20,
               objectFit: "cover",
             }}
+            alt={user.name || "Usuário"}
           />
         )}
 
@@ -220,7 +261,7 @@ export default function UserDetail() {
           <Info label="Email" value={user.email} />
           <Info label="Perfil" value={user.role} />
           <Info label="Profissão" value={user.profissao} />
-          <Info label="Telefone" value={user.phone} />
+          <Info label="Telefone" value={user.phone || user.telefone} />
           <Info label="CPF" value={user.cpf} />
           <Info label="Status" value={getAccountStatus()} />
           <Info label="Online" value={getOnlineStatus()} />
@@ -232,13 +273,19 @@ export default function UserDetail() {
           <Action
             label="Bloquear usuário"
             danger
+            disabled={actionLoading}
             onClick={() => handleUserStatus("blocked")}
           />
           <Action
             label="Desbloquear usuário"
+            disabled={actionLoading}
             onClick={() => handleUserStatus("active")}
           />
-          <Action label="Abrir chat" onClick={openChat} />
+          <Action
+            label="Abrir chat"
+            disabled={actionLoading}
+            onClick={openChat}
+          />
         </Actions>
       </Card>
 
@@ -257,11 +304,32 @@ export default function UserDetail() {
           </Grid>
 
           <Actions>
-            <Action label="Liberar 7 dias" onClick={() => handleExtendAccess(7)} />
-            <Action label="Liberar 15 dias" onClick={() => handleExtendAccess(15)} />
-            <Action label="Liberar 30 dias" onClick={() => handleExtendAccess(30)} />
-            <Action label="Liberar permanente" onClick={() => handleExtendAccess(3650)} />
-            <Action label="Bloquear acesso" danger onClick={handleExpireNow} />
+            <Action
+              label="Liberar 7 dias"
+              disabled={actionLoading}
+              onClick={() => handleExtendAccess(7)}
+            />
+            <Action
+              label="Liberar 15 dias"
+              disabled={actionLoading}
+              onClick={() => handleExtendAccess(15)}
+            />
+            <Action
+              label="Liberar 30 dias"
+              disabled={actionLoading}
+              onClick={() => handleExtendAccess(30)}
+            />
+            <Action
+              label="Liberar permanente"
+              disabled={actionLoading}
+              onClick={() => handleExtendAccess(3650)}
+            />
+            <Action
+              label="Bloquear acesso"
+              danger
+              disabled={actionLoading}
+              onClick={handleExpireNow}
+            />
           </Actions>
         </Card>
       )}
@@ -269,17 +337,103 @@ export default function UserDetail() {
       {user.role === "profissional" && (
         <Card title="Serviços">
           <Grid>
-            <Info label="Recebidos" value={user.jobsReceived || 0} />
-            <Info label="Aceitos" value={user.jobsAccepted || 0} />
-            <Info label="Recusados" value={user.jobsRejected || 0} />
-            <Info label="Em andamento" value={user.jobsActive || 0} />
-            <Info label="Finalizados" value={user.jobsCompleted || 0} />
-            <Info label="Cliente atual" value={user?.currentClient?.name} />
+            <Info label="Recebidos" value={serviceStats.recebidos} />
+            <Info label="Aceitos" value={serviceStats.aceitos} />
+            <Info label="Recusados" value={serviceStats.recusados} />
+            <Info label="Em andamento" value={serviceStats.emAndamento} />
+            <Info label="Finalizados" value={serviceStats.finalizados} />
+            <Info label="Cliente atual" value={serviceStats.clienteAtual} />
           </Grid>
         </Card>
       )}
     </Page>
   );
+}
+
+function normalizeServicosResponse(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.servicos)) return data.servicos;
+  if (Array.isArray(data?.services)) return data.services;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+
+  return [];
+}
+
+function getEmptyServiceStats() {
+  return {
+    recebidos: 0,
+    aceitos: 0,
+    recusados: 0,
+    emAndamento: 0,
+    finalizados: 0,
+    clienteAtual: "—",
+  };
+}
+
+function calculateServiceStats(servicos) {
+  const stats = getEmptyServiceStats();
+
+  stats.recebidos = servicos.length;
+
+  for (const servico of servicos) {
+    const status = String(servico?.status || "").toLowerCase().trim();
+
+    if (status === "aceito") {
+      stats.aceitos += 1;
+    }
+
+    if (
+      status === "cancelado" ||
+      status === "expirado" ||
+      status === "recusado"
+    ) {
+      stats.recusados += 1;
+    }
+
+    if (
+      status === "em_rota" ||
+      status === "em_andamento" ||
+      status === "pago"
+    ) {
+      stats.emAndamento += 1;
+    }
+
+    if (status === "finalizado") {
+      stats.finalizados += 1;
+    }
+  }
+
+  const servicoAtual = servicos.find((servico) => {
+    const status = String(servico?.status || "").toLowerCase().trim();
+
+    return ["pendente", "aceito", "em_rota", "em_andamento", "pago"].includes(
+      status
+    );
+  });
+
+  stats.clienteAtual =
+    servicoAtual?.cliente?.name ||
+    servicoAtual?.cliente?.nome ||
+    servicoAtual?.clienteNome ||
+    "—";
+
+  return stats;
+}
+
+function formatValue(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  return value;
+}
+
+function formatDate(d) {
+  if (!d) return "—";
+
+  const date = new Date(d);
+
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString("pt-BR");
 }
 
 const card = {
@@ -322,10 +476,4 @@ const btn = {
   border: "none",
   padding: "8px 14px",
   borderRadius: 8,
-  cursor: "pointer",
 };
-
-function formatDate(d) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("pt-BR");
-}
