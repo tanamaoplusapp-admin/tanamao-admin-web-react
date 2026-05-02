@@ -75,43 +75,14 @@ export default function UserDetail() {
     try {
       setLoading(true);
 
-      const [userRes, servicosRes] = await Promise.allSettled([
-        API.get(`/admin/users/${id}`),
-        API.get("/servicos"),
-      ]);
+      const userRes = await API.get(`/admin/users/${id}`);
+      const userData = userRes.data?.user || userRes.data;
 
-      if (userRes.status !== "fulfilled") {
-        throw userRes.reason;
-      }
-
-      const userData = userRes.value.data?.user || userRes.value.data;
       setUser(userData || null);
 
-      if (servicosRes.status === "fulfilled") {
-        const servicos = normalizeServicosResponse(servicosRes.value.data);
+      const servicos = await loadServicosDoProfissional(id);
 
-        const servicosDoProfissional = servicos.filter((servico) => {
-          const profissionalId =
-            servico?.profissional?._id ||
-            servico?.profissional?.id ||
-            servico?.profissional ||
-            servico?.profissionalId ||
-            servico?.prestador?._id ||
-            servico?.prestador?.id ||
-            servico?.prestador ||
-            servico?.prestadorId;
-
-          return String(profissionalId) === String(id);
-        });
-
-        setServiceStats(calculateServiceStats(servicosDoProfissional));
-      } else {
-        console.error(
-          "[UserDetail] Erro ao carregar /servicos:",
-          servicosRes.reason
-        );
-        setServiceStats(getEmptyServiceStats());
-      }
+      setServiceStats(calculateServiceStats(servicos));
     } catch (e) {
       console.error("[UserDetail] Erro ao carregar usuário:", e);
       setUser(null);
@@ -119,6 +90,48 @@ export default function UserDetail() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadServicosDoProfissional(profissionalIdDaTela) {
+    const resultados = [];
+
+    try {
+      const resTodos = await API.get("/servicos");
+      const todos = normalizeServicosResponse(resTodos.data);
+
+      const filtrados = todos.filter((servico) =>
+        serviceBelongsToProfessional(servico, profissionalIdDaTela)
+      );
+
+      resultados.push(...filtrados);
+
+      console.log("✅ /servicos total:", todos.length);
+      console.log("✅ /servicos filtrados:", filtrados.length);
+    } catch (e) {
+      console.error("[UserDetail] Erro ao buscar /servicos:", e);
+    }
+
+    try {
+      const resProfissional = await API.get(
+        `/servicos/profissional/${profissionalIdDaTela}`
+      );
+
+      const doProfissional = normalizeServicosResponse(resProfissional.data);
+
+      resultados.push(...doProfissional);
+
+      console.log(
+        "✅ /servicos/profissional/:id:",
+        doProfissional.length
+      );
+    } catch (e) {
+      console.error(
+        "[UserDetail] Erro ao buscar /servicos/profissional/:id:",
+        e
+      );
+    }
+
+    return uniqueServices(resultados);
   }
 
   function getOnlineStatus() {
@@ -338,9 +351,11 @@ export default function UserDetail() {
         <Card title="Serviços">
           <Grid>
             <Info label="Recebidos" value={serviceStats.recebidos} />
+            <Info label="Pendentes" value={serviceStats.pendentes} />
             <Info label="Aceitos" value={serviceStats.aceitos} />
             <Info label="Recusados" value={serviceStats.recusados} />
             <Info label="Em andamento" value={serviceStats.emAndamento} />
+            <Info label="Pagos" value={serviceStats.pagos} />
             <Info label="Finalizados" value={serviceStats.finalizados} />
             <Info label="Cliente atual" value={serviceStats.clienteAtual} />
           </Grid>
@@ -356,16 +371,52 @@ function normalizeServicosResponse(data) {
   if (Array.isArray(data?.services)) return data.services;
   if (Array.isArray(data?.data)) return data.data;
   if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.result)) return data.result;
 
   return [];
+}
+
+function serviceBelongsToProfessional(servico, profissionalIdDaTela) {
+  const possibleIds = [
+    servico?.profissional?._id,
+    servico?.profissional?.id,
+    servico?.profissional,
+    servico?.profissionalId,
+    servico?.prestador?._id,
+    servico?.prestador?.id,
+    servico?.prestador,
+    servico?.prestadorId,
+    servico?.userId,
+    servico?.providerId,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value));
+
+  return possibleIds.includes(String(profissionalIdDaTela));
+}
+
+function uniqueServices(servicos) {
+  const map = new Map();
+
+  for (const servico of servicos) {
+    const key = servico?._id || servico?.id;
+
+    if (!key) continue;
+
+    map.set(String(key), servico);
+  }
+
+  return Array.from(map.values());
 }
 
 function getEmptyServiceStats() {
   return {
     recebidos: 0,
+    pendentes: 0,
     aceitos: 0,
     recusados: 0,
     emAndamento: 0,
+    pagos: 0,
     finalizados: 0,
     clienteAtual: "—",
   };
@@ -379,6 +430,10 @@ function calculateServiceStats(servicos) {
   for (const servico of servicos) {
     const status = String(servico?.status || "").toLowerCase().trim();
 
+    if (status === "pendente") {
+      stats.pendentes += 1;
+    }
+
     if (status === "aceito") {
       stats.aceitos += 1;
     }
@@ -391,12 +446,12 @@ function calculateServiceStats(servicos) {
       stats.recusados += 1;
     }
 
-    if (
-      status === "em_rota" ||
-      status === "em_andamento" ||
-      status === "pago"
-    ) {
+    if (status === "em_rota" || status === "em_andamento") {
       stats.emAndamento += 1;
+    }
+
+    if (status === "pago") {
+      stats.pagos += 1;
     }
 
     if (status === "finalizado") {
