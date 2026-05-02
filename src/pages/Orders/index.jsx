@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Page from "../../layout/Page";
-import { getOrders } from "../../services/orders";
+import API from "../../services/api";
 
 export default function Orders() {
   const navigate = useNavigate();
 
-  const [orders, setOrders] = useState([]);
+  const [services, setServices] = useState([]);
   const [filtered, setFiltered] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
+  const [status, setStatus] = useState("abertos");
 
   useEffect(() => {
     load();
@@ -21,32 +21,62 @@ export default function Orders() {
 
   useEffect(() => {
     filter();
-  }, [orders, search, status]);
+  }, [services, search, status]);
 
   async function load() {
     try {
-      const data = await getOrders();
-      setOrders(data || []);
+      setLoading(true);
+      setError(null);
+
+      const res = await API.get("/servicos");
+      const data = normalizeServicesResponse(res.data);
+
+      setServices(data);
     } catch (err) {
-      setError("Erro ao carregar pedidos");
+      console.error("[Orders] Erro ao carregar serviços:", err);
+      setError("Erro ao carregar serviços");
     } finally {
       setLoading(false);
     }
   }
 
   function filter() {
-    let list = [...orders];
+    let list = [...services];
 
-    if (status !== "all") {
-      list = list.filter(o => o.status === status);
+    if (status === "abertos") {
+      list = list.filter((service) => isOpenService(service.status));
+    } else if (status !== "all") {
+      list = list.filter((service) => service.status === status);
     }
 
-    if (search) {
-      list = list.filter(o =>
-        (o._id || "")
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      );
+    if (search.trim()) {
+      const term = search.toLowerCase().trim();
+
+      list = list.filter((service) => {
+        const id = String(service._id || "").toLowerCase();
+        const cliente = String(
+          service.cliente?.name ||
+            service.cliente?.nome ||
+            service.clienteNome ||
+            ""
+        ).toLowerCase();
+        const profissional = String(
+          service.profissional?.name ||
+            service.profissional?.nome ||
+            service.profissionalNome ||
+            ""
+        ).toLowerCase();
+        const categoria = String(service.categoria || "").toLowerCase();
+        const descricao = String(service.descricao || "").toLowerCase();
+
+        return (
+          id.includes(term) ||
+          cliente.includes(term) ||
+          profissional.includes(term) ||
+          categoria.includes(term) ||
+          descricao.includes(term)
+        );
+      });
     }
 
     setFiltered(list);
@@ -65,26 +95,43 @@ export default function Orders() {
       title="Serviços"
       subtitle="Central completa de serviços Tanamão+"
     >
+      <div style={summaryGrid}>
+        <SummaryCard label="Abertos" value={countByGroup(services, "abertos")} />
+        <SummaryCard label="Pendentes" value={countByStatus(services, "pendente")} />
+        <SummaryCard label="Aceitos" value={countByStatus(services, "aceito")} />
+        <SummaryCard label="Em rota" value={countByStatus(services, "em_rota")} />
+        <SummaryCard label="Pagos" value={countByStatus(services, "pago")} />
+        <SummaryCard label="Finalizados" value={countByStatus(services, "finalizado")} />
+        <SummaryCard label="Cancelados" value={countByStatus(services, "cancelado")} />
+      </div>
+
       <div style={toolbar}>
         <input
-          placeholder="Buscar ID..."
+          placeholder="Buscar por ID, cliente, prestador ou categoria..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           style={input}
         />
 
         <select
           value={status}
-          onChange={e => setStatus(e.target.value)}
+          onChange={(e) => setStatus(e.target.value)}
           style={select}
         >
+          <option value="abertos">Serviços em aberto</option>
           <option value="all">Todos</option>
           <option value="pendente">Pendente</option>
           <option value="aceito">Aceito</option>
-          <option value="ativo">Ativo</option>
-          <option value="concluido">Concluído</option>
+          <option value="em_rota">Em rota</option>
+          <option value="pago">Pago</option>
+          <option value="finalizado">Finalizado</option>
           <option value="cancelado">Cancelado</option>
+          <option value="expirado">Expirado</option>
         </select>
+
+        <button style={refreshBtn} onClick={load}>
+          Atualizar
+        </button>
       </div>
 
       <div style={tableWrapper}>
@@ -93,11 +140,10 @@ export default function Orders() {
             <tr>
               <th style={th}>ID</th>
               <th style={th}>Tipo</th>
+              <th style={th}>Categoria</th>
               <th style={th}>Cliente</th>
               <th style={th}>Prestador</th>
-              <th style={th}>Plano</th>
               <th style={th}>Valor</th>
-              <th style={th}>Comissão</th>
               <th style={th}>Status</th>
               <th style={th}>Criado</th>
               <th style={th}></th>
@@ -105,54 +151,48 @@ export default function Orders() {
           </thead>
 
           <tbody>
-            {filtered.map(o => (
-              <tr key={o._id}>
-                <td style={td}>{o._id}</td>
+            {filtered.map((service) => (
+              <tr key={service._id}>
+                <td style={td}>{shortId(service._id)}</td>
 
                 <td style={td}>
-                  <TypeBadge type={o.tipo} />
+                  <TypeBadge type={service.tipoServico} />
                 </td>
 
                 <td style={td}>
-                  {o.cliente?.name || "-"}
+                  {service.categoria || "-"}
                 </td>
 
                 <td style={td}>
-                  {o.profissional?.name || "-"}
+                  {service.cliente?.name ||
+                    service.cliente?.nome ||
+                    service.clienteNome ||
+                    "-"}
                 </td>
 
                 <td style={td}>
-                  {o.profissional?.plano || "-"}
+                  {service.profissional?.name ||
+                    service.profissional?.nome ||
+                    service.profissionalNome ||
+                    "-"}
                 </td>
 
                 <td style={td}>
-                  {o.valor
-                    ? `R$ ${o.valor}`
-                    : "-"}
+                  {money(service.valorFinal ?? service.price ?? service.valor)}
                 </td>
 
                 <td style={td}>
-                  {o.comissao
-                    ? `R$ ${o.comissao}`
-                    : "-"}
+                  <StatusBadge status={service.status} />
                 </td>
 
                 <td style={td}>
-                  <StatusBadge status={o.status} />
-                </td>
-
-                <td style={td}>
-                  {o.createdAt
-                    ? new Date(o.createdAt).toLocaleString()
-                    : "-"}
+                  {formatDateTime(service.createdAt)}
                 </td>
 
                 <td style={td}>
                   <button
                     style={btn}
-                    onClick={() =>
-                      navigate(`/orders/${o._id}`)
-                    }
+                    onClick={() => navigate(`/orders/${service._id}`)}
                   >
                     Ver
                   </button>
@@ -172,13 +212,51 @@ export default function Orders() {
   );
 }
 
+function normalizeServicesResponse(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.servicos)) return data.servicos;
+  if (Array.isArray(data?.services)) return data.services;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.result)) return data.result;
+
+  return [];
+}
+
+function isOpenService(status) {
+  return ["pendente", "aceito", "em_rota", "pago"].includes(status);
+}
+
+function countByStatus(list, status) {
+  return list.filter((item) => item.status === status).length;
+}
+
+function countByGroup(list, group) {
+  if (group === "abertos") {
+    return list.filter((item) => isOpenService(item.status)).length;
+  }
+
+  return 0;
+}
+
+function SummaryCard({ label, value }) {
+  return (
+    <div style={summaryCard}>
+      <div style={summaryLabel}>{label}</div>
+      <div style={summaryValue}>{value}</div>
+    </div>
+  );
+}
+
 function StatusBadge({ status }) {
   const map = {
     pendente: "#F59E0B",
     aceito: "#2563EB",
-    ativo: "#7C3AED",
-    concluido: "#059669",
-    cancelado: "#DC2626"
+    em_rota: "#7C3AED",
+    pago: "#0EA5E9",
+    finalizado: "#059669",
+    cancelado: "#DC2626",
+    expirado: "#6B7280",
   };
 
   return (
@@ -188,10 +266,11 @@ function StatusBadge({ status }) {
         color: "#fff",
         padding: "4px 8px",
         borderRadius: 6,
-        fontSize: 12
+        fontSize: 12,
+        whiteSpace: "nowrap",
       }}
     >
-      {status}
+      {statusLabel(status)}
     </span>
   );
 }
@@ -201,7 +280,7 @@ function TypeBadge({ type }) {
     normal: "#2563EB",
     agendado: "#7C3AED",
     orcamento: "#059669",
-    emergencial: "#DC2626"
+    emergencial: "#DC2626",
   };
 
   return (
@@ -211,52 +290,147 @@ function TypeBadge({ type }) {
         color: "#fff",
         padding: "4px 8px",
         borderRadius: 6,
-        fontSize: 12
+        fontSize: 12,
+        whiteSpace: "nowrap",
       }}
     >
-      {type || "serviço"}
+      {typeLabel(type)}
     </span>
   );
 }
 
+function statusLabel(status) {
+  const map = {
+    pendente: "Pendente",
+    aceito: "Aceito",
+    em_rota: "Em rota",
+    pago: "Pago",
+    finalizado: "Finalizado",
+    cancelado: "Cancelado",
+    expirado: "Expirado",
+  };
+
+  return map[status] || status || "-";
+}
+
+function typeLabel(type) {
+  const map = {
+    normal: "Normal",
+    agendado: "Agendado",
+    orcamento: "Orçamento",
+    emergencial: "Emergencial",
+  };
+
+  return map[type] || type || "Serviço";
+}
+
+function shortId(id) {
+  if (!id) return "-";
+  return String(id).slice(-8);
+}
+
+function money(value) {
+  if (value === null || value === undefined || value === "") return "-";
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) return "-";
+
+  return number.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function formatDateTime(date) {
+  if (!date) return "-";
+
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) return "-";
+
+  return parsed.toLocaleString("pt-BR");
+}
+
+const summaryGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+  gap: 12,
+  marginBottom: 16,
+};
+
+const summaryCard = {
+  background: "#fff",
+  border: "1px solid #E5E7EB",
+  borderRadius: 12,
+  padding: 14,
+};
+
+const summaryLabel = {
+  fontSize: 12,
+  color: "#6B7280",
+  marginBottom: 6,
+};
+
+const summaryValue = {
+  fontSize: 22,
+  fontWeight: 900,
+  color: "#111827",
+};
+
 const toolbar = {
   display: "flex",
   gap: 12,
-  marginBottom: 16
+  marginBottom: 16,
+  flexWrap: "wrap",
 };
 
 const input = {
   padding: 8,
   border: "1px solid #E5E7EB",
-  borderRadius: 8
+  borderRadius: 8,
+  minWidth: 320,
 };
 
 const select = {
   padding: 8,
   borderRadius: 8,
-  border: "1px solid #E5E7EB"
+  border: "1px solid #E5E7EB",
+};
+
+const refreshBtn = {
+  background: "#14532D",
+  color: "#fff",
+  border: "none",
+  padding: "8px 14px",
+  borderRadius: 8,
+  cursor: "pointer",
+  fontWeight: 700,
 };
 
 const tableWrapper = {
   background: "#fff",
   borderRadius: 12,
-  border: "1px solid #E5E7EB"
+  border: "1px solid #E5E7EB",
+  overflowX: "auto",
 };
 
 const table = {
   width: "100%",
-  borderCollapse: "collapse"
+  borderCollapse: "collapse",
 };
 
 const th = {
   padding: 12,
   textAlign: "left",
-  background: "#F9FAFB"
+  background: "#F9FAFB",
+  whiteSpace: "nowrap",
 };
 
 const td = {
   padding: 12,
-  borderTop: "1px solid #E5E7EB"
+  borderTop: "1px solid #E5E7EB",
+  verticalAlign: "middle",
 };
 
 const btn = {
@@ -265,5 +439,5 @@ const btn = {
   border: "none",
   padding: "6px 12px",
   borderRadius: 8,
-  cursor: "pointer"
+  cursor: "pointer",
 };
