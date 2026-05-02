@@ -273,7 +273,7 @@ export default function UserDetail() {
           <Info label="Nome" value={user.name} />
           <Info label="Email" value={user.email} />
           <Info label="Perfil" value={user.role} />
-          <Info label="Profissão" value={user.profissao} />
+          <Info label="Profissão" value={getProfissaoPrestador(user)} />
           <Info label="Telefone" value={user.phone || user.telefone} />
           <Info label="CPF" value={user.cpf} />
           <Info label="Status" value={getAccountStatus()} />
@@ -490,7 +490,73 @@ function formatDate(d) {
 
   return date.toLocaleDateString("pt-BR");
 }
+function getProfissaoPrestador(user) {
+  const profissional = user?.profissional || user?.perfilProfissional || {};
 
+  const possibilidades = [
+    user?.profissaoNome,
+    user?.profissao?.nome,
+    user?.profissao?.name,
+    user?.profissao?.titulo,
+    user?.profissao,
+
+    user?.profissaoPrincipal?.nome,
+    user?.profissaoPrincipal?.name,
+    user?.profissaoPrincipal,
+
+    profissional?.profissaoNome,
+    profissional?.profissao?.nome,
+    profissional?.profissao?.name,
+    profissional?.profissao?.titulo,
+    profissional?.profissao,
+
+    profissional?.profissaoPrincipal?.nome,
+    profissional?.profissaoPrincipal?.name,
+    profissional?.profissaoPrincipal,
+
+    user?.categoriaProfissional?.nome,
+    user?.categoria?.nome,
+    user?.categoria,
+  ];
+
+  const encontrada = possibilidades.find((item) => {
+    if (!item) return false;
+
+    if (typeof item === "string") {
+      const value = item.trim();
+
+      if (!value) return false;
+
+      // evita mostrar ObjectId como se fosse profissão
+      if (/^[a-f\d]{24}$/i.test(value)) return false;
+
+      return true;
+    }
+
+    return false;
+  });
+
+  if (encontrada) return encontrada;
+
+  if (Array.isArray(user?.profissoes) && user.profissoes.length > 0) {
+    return user.profissoes
+      .map((item) => item?.nome || item?.name || item?.titulo || item)
+      .filter((item) => typeof item === "string" && item.trim())
+      .join(", ");
+  }
+
+  if (
+    Array.isArray(profissional?.profissoes) &&
+    profissional.profissoes.length > 0
+  ) {
+    return profissional.profissoes
+      .map((item) => item?.nome || item?.name || item?.titulo || item)
+      .filter((item) => typeof item === "string" && item.trim())
+      .join(", ");
+  }
+
+  return "—";
+}
 const card = {
   background: "#fff",
   padding: 24,
