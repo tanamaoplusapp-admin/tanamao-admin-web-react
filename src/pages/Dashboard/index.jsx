@@ -77,16 +77,16 @@ const EMPTY_DASHBOARD = {
     chatsHoje: 0,
     tempoResposta: 0,
   },
-  finance: {
-    receitaHoje: 0,
-    receitaSemana: 0,
-    receitaMes: 0,
-    receitaTotal: 0,
-    mrr: 0,
-    ticketMedio: 0,
-    assinaturasAtivas: 0,
-    inadimplentes: 0,
-  },
+finance: {
+  receitaHoje: 0,
+  receitaSemana: 0,
+  receitaMes: 0,
+  receitaTotal: 0,
+  ticketMedio: 0,
+  acessosAtivos: 0,
+  acessosExpirados: 0,
+  transacoesAprovadas: 0,
+},
   users: {
     total: 0,
     clientes: 0,
@@ -176,30 +176,39 @@ function normalizeDashboard(data) {
       ),
     },
 
-    finance: {
-      receitaHoje: toNumber(
-        safe?.finance?.receitaHoje ?? safe?.finance?.todayRevenue
-      ),
-      receitaSemana: toNumber(
-        safe?.finance?.receitaSemana ?? safe?.finance?.weekRevenue
-      ),
-      receitaMes: toNumber(
-        safe?.finance?.receitaMes ?? safe?.finance?.monthRevenue
-      ),
-      receitaTotal: toNumber(
-        safe?.finance?.receitaTotal ?? safe?.finance?.totalRevenue
-      ),
-      mrr: toNumber(safe?.finance?.mrr),
-      ticketMedio: toNumber(
-        safe?.finance?.ticketMedio ?? safe?.finance?.averageTicket
-      ),
-      assinaturasAtivas: toNumber(
-        safe?.finance?.assinaturasAtivas ?? safe?.finance?.activeSubscriptions
-      ),
-      inadimplentes: toNumber(
-        safe?.finance?.inadimplentes ?? safe?.finance?.overdueProviders
-      ),
-    },
+  finance: {
+  receitaHoje: toNumber(
+    safe?.finance?.receitaHoje
+  ),
+
+  receitaSemana: toNumber(
+    safe?.finance?.receitaSemana
+  ),
+
+  receitaMes: toNumber(
+    safe?.finance?.receitaMes
+  ),
+
+  receitaTotal: toNumber(
+    safe?.finance?.receitaTotal
+  ),
+
+  ticketMedio: toNumber(
+    safe?.finance?.ticketMedio
+  ),
+
+  acessosAtivos: toNumber(
+    safe?.finance?.acessosAtivos
+  ),
+
+  acessosExpirados: toNumber(
+    safe?.finance?.acessosExpirados
+  ),
+
+  transacoesAprovadas: toNumber(
+    safe?.finance?.transacoesAprovadas
+  ),
+},
 
     users: {
       total: toNumber(safe?.users?.total),
@@ -427,29 +436,55 @@ export default function Dashboard() {
           color="#14532D"
         />
 
-        <Card
-          title="MRR"
-          value={loading ? "..." : formatMoney(dashboard.finance.mrr)}
-          color="#15803D"
-        />
+      <Card
+  title="Ticket médio"
+  value={
+    loading
+      ? "..."
+      : formatMoney(
+          dashboard.finance.ticketMedio
+        )
+  }
+  subtitle="Média por pagamento aprovado"
+/>
 
-        <Card
-          title="Ticket médio"
-          value={loading ? "..." : formatMoney(dashboard.finance.ticketMedio)}
-        />
+<Card
+  title="Transações aprovadas"
+  value={
+    loading
+      ? "..."
+      : formatCount(
+          dashboard.finance.transacoesAprovadas
+        )
+  }
+  color="#2563EB"
+/>
 
-        <Card
-          title="Assinaturas ativas"
-          value={loading ? "..." : formatCount(dashboard.finance.assinaturasAtivas)}
-          color="#15803D"
-        />
+<Card
+  title="Acessos ativos"
+  value={
+    loading
+      ? "..."
+      : formatCount(
+          dashboard.finance.acessosAtivos
+        )
+  }
+  subtitle="Profissionais com acesso válido"
+  color="#15803D"
+/>
 
-        <Card
-          title="Inadimplentes"
-          value={loading ? "..." : formatCount(dashboard.finance.inadimplentes)}
-          color="#DC2626"
-        />
-
+<Card
+  title="Acessos expirados"
+  value={
+    loading
+      ? "..."
+      : formatCount(
+          dashboard.finance.acessosExpirados
+        )
+  }
+  subtitle="Profissionais com acesso vencido"
+  color="#DC2626"
+/>
         <Section title="👥 Usuários" />
 
         <Card

@@ -1,37 +1,62 @@
 import API from "./api";
 
 /**
- * FINANCE SERVICE (ADMIN WEB)
- * Todas as chamadas são ADMIN
- * Rotas ainda opcionais (safeGet)
+ * =========================================================
+ * FINANCE SERVICE — ADMIN WEB
+ * =========================================================
+ *
+ * Fonte financeira atual:
+ * Collection Transaction
+ *
+ * Rotas:
+ * GET /api/admin/finance/summary
+ * GET /api/admin/finance/transactions
+ * GET /api/admin/finance/reconciliation
  */
 
-async function safeGet(url, options) {
-  try {
-    const res = await API.get(url, options);
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 404) {
-      return null;
-    }
-    throw err;
-  }
-}
+/* =========================================================
+   RESUMO FINANCEIRO
+========================================================= */
 
 export async function getFinanceSummary() {
-  return safeGet("/admin/finance/summary");
+  const response = await API.get(
+    "/admin/finance/summary"
+  );
+
+  return response.data;
 }
 
-export async function getFinanceTransactions(params = {}) {
-  const data = await safeGet("/admin/finance/transactions", { params });
-  return data || [];
+/* =========================================================
+   TRANSAÇÕES
+========================================================= */
+
+export async function getFinanceTransactions(
+  params = {}
+) {
+  const response = await API.get(
+    "/admin/finance/transactions",
+    {
+      params,
+    }
+  );
+
+  return response.data || [];
 }
 
-export async function getMensalidadesResumo() {
-  return safeGet("/admin/central-mensalidade/resumo");
-}
+/* =========================================================
+   CONCILIAÇÃO
 
-export async function getMensalidadesAtrasadas() {
-  const data = await safeGet("/admin/central-mensalidade/atrasadas");
-  return data || [];
+   Retorna pagamentos aprovados que não
+   foram aplicados corretamente ao usuário.
+========================================================= */
+
+export async function getFinanceReconciliation() {
+  const response = await API.get(
+    "/admin/finance/reconciliation"
+  );
+
+  return response.data || {
+    total: 0,
+    items: [],
+  };
 }
