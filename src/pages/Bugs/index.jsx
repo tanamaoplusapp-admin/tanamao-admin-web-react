@@ -2,70 +2,84 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getBugs } from "../../services/bugs";
 
-function Card({ title, value, color, subtitle }) {
+/* =========================================================
+   COMPONENTES
+========================================================= */
+
+function Card({
+  title,
+  value,
+  color,
+  subtitle,
+}) {
   return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: 18,
-        padding: 20,
-        border: "1px solid #E5E7EB",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          color: "#64748B",
-          marginBottom: 8,
-          textTransform: "uppercase",
-          letterSpacing: 0.4,
-        }}
-      >
+    <div style={cardStyle}>
+      <div style={cardTitle}>
         {title}
       </div>
 
       <div
         style={{
-          fontSize: 28,
-          fontWeight: 900,
-          color: color || "#111827",
-          lineHeight: 1,
+          ...cardValue,
+          color:
+            color || "#111827",
         }}
       >
         {value}
       </div>
 
-      {subtitle ? (
-        <div
-          style={{
-            marginTop: 8,
-            fontSize: 12,
-            color: "#94A3B8",
-          }}
-        >
+      {subtitle && (
+        <div style={cardSubtitle}>
           {subtitle}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
 
+/* =========================================================
+   NORMALIZAÇÃO
+========================================================= */
+
 function normalizeSeverity(value) {
-  const v = String(value || "").trim().toLowerCase();
+  const v = String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase();
 
   if (
-    ["critical", "critico", "crítico", "fatal", "blocker", "high"].includes(v)
+    [
+      "critical",
+      "critico",
+      "crítico",
+      "fatal",
+      "blocker",
+      "high",
+    ].includes(v)
   ) {
     return "critical";
   }
 
-  if (["medium", "medio", "médio", "warning", "moderate"].includes(v)) {
+  if (
+    [
+      "medium",
+      "medio",
+      "médio",
+      "warning",
+      "moderate",
+    ].includes(v)
+  ) {
     return "medium";
   }
 
-  if (["low", "baixo", "minor"].includes(v)) {
+  if (
+    [
+      "low",
+      "baixo",
+      "minor",
+    ].includes(v)
+  ) {
     return "low";
   }
 
@@ -73,22 +87,48 @@ function normalizeSeverity(value) {
 }
 
 function normalizeStatus(value) {
-  const v = String(value || "").trim().toLowerCase();
+  const v = String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase();
 
   if (
-    ["open", "opened", "aberto", "nova", "novo", "pending", "pendente"].includes(v)
+    [
+      "open",
+      "opened",
+      "aberto",
+      "nova",
+      "novo",
+      "pending",
+      "pendente",
+    ].includes(v)
   ) {
     return "open";
   }
 
   if (
-    ["resolved", "resolvido", "fixed", "closed", "fechado", "done"].includes(v)
+    [
+      "resolved",
+      "resolvido",
+      "fixed",
+      "closed",
+      "fechado",
+      "done",
+    ].includes(v)
   ) {
     return "resolved";
   }
 
   if (
-    ["in_progress", "in-progress", "progress", "andamento", "em andamento"].includes(v)
+    [
+      "in_progress",
+      "in-progress",
+      "progress",
+      "andamento",
+      "em andamento",
+      "em_andamento",
+    ].includes(v)
   ) {
     return "in_progress";
   }
@@ -96,45 +136,7 @@ function normalizeStatus(value) {
   return v || "unknown";
 }
 
-function formatDateTime(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "medium",
-  }).format(date);
-}
-
-function getBugMainMessage(bug) {
-  return (
-    bug.message ||
-    bug.errorMessage ||
-    bug.description ||
-    bug.details ||
-    bug.stackPreview ||
-    "Sem descrição"
-  );
-}
-
-function getOccurrences(bug) {
-  return (
-    bug.occurrences ??
-    bug.count ??
-    bug.totalOccurrences ??
-    bug.total ??
-    bug.hits ??
-    1
-  );
-}
-
 function prepareBug(raw) {
-  const severity = normalizeSeverity(raw?.severity);
-  const status = normalizeStatus(raw?.status);
-
   const firstSeen =
     raw?.firstSeen ||
     raw?.firstOccurrence ||
@@ -149,52 +151,127 @@ function prepareBug(raw) {
     raw?.timestamp ||
     null;
 
-  const createdAt = raw?.createdAt || firstSeen || null;
-  const updatedAt = raw?.updatedAt || lastSeen || null;
-
   return {
     ...raw,
-    id: raw?._id || raw?.id,
-    severityNormalized: severity,
-    statusNormalized: status,
-    firstSeenNormalized: firstSeen,
-    lastSeenNormalized: lastSeen,
-    createdAtNormalized: createdAt,
-    updatedAtNormalized: updatedAt,
-    occurrencesNormalized: getOccurrences(raw),
-    mainMessage: getBugMainMessage(raw),
+
+    id:
+      raw?._id ||
+      raw?.id,
+
+    severityNormalized:
+      normalizeSeverity(
+        raw?.severity
+      ),
+
+    statusNormalized:
+      normalizeStatus(
+        raw?.status
+      ),
+
+    firstSeenNormalized:
+      firstSeen,
+
+    lastSeenNormalized:
+      lastSeen,
+
+    occurrencesNormalized:
+      getOccurrences(raw),
+
+    mainMessage:
+      getBugMainMessage(raw),
   };
 }
 
-export default function Bugs() {
-  const navigate = useNavigate();
-  const location = useLocation();
+/* =========================================================
+   TELA
+========================================================= */
 
-  const [bugs, setBugs] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function Bugs() {
+  const navigate =
+    useNavigate();
+
+  const location =
+    useLocation();
+
+  const [
+    bugs,
+    setBugs,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+  const [
+    platformFilter,
+    setPlatformFilter,
+  ] = useState("all");
+
+  const [
+    versionFilter,
+    setVersionFilter,
+  ] = useState("all");
+
+  /* =========================================================
+     CARREGAR BUGS REAIS
+  ========================================================= */
 
   useEffect(() => {
     async function load() {
       setLoading(true);
 
       try {
-        const params = new URLSearchParams(location.search);
+        const params =
+          new URLSearchParams(
+            location.search
+          );
 
-        const severity = params.get("severity");
-        const status = params.get("status");
+        const severity =
+          params.get(
+            "severity"
+          );
 
-        const data = await getBugs({
-          severity,
-          status,
-        });
+        const status =
+          params.get(
+            "status"
+          );
 
-        const normalized = Array.isArray(data)
-          ? data.map(prepareBug)
-          : [];
+        const data =
+          await getBugs({
+            severity,
+            status,
+          });
 
-        setBugs(normalized);
+        const list =
+          Array.isArray(data)
+            ? data
+            : Array.isArray(
+                data?.bugs
+              )
+            ? data.bugs
+            : Array.isArray(
+                data?.items
+              )
+            ? data.items
+            : [];
+
+        setBugs(
+          list.map(
+            prepareBug
+          )
+        );
       } catch (error) {
-        console.error("Erro ao carregar bugs:", error);
+        console.error(
+          "Erro ao carregar bugs:",
+          error
+        );
+
         setBugs([]);
       } finally {
         setLoading(false);
@@ -204,101 +281,215 @@ export default function Bugs() {
     load();
   }, [location.search]);
 
-  const metrics = useMemo(() => {
-    const total = bugs.length;
+  /* =========================================================
+     MÉTRICAS
+  ========================================================= */
 
-    const critical = bugs.filter(
-      (b) => b.severityNormalized === "critical"
-    ).length;
+  const metrics =
+    useMemo(() => {
+      const total =
+        bugs.length;
 
-    const open = bugs.filter(
-      (b) => b.statusNormalized === "open"
-    ).length;
+      const critical =
+        bugs.filter(
+          (bug) =>
+            bug.severityNormalized ===
+            "critical"
+        ).length;
 
-    const resolved = bugs.filter(
-      (b) => b.statusNormalized === "resolved"
-    ).length;
+      const open =
+        bugs.filter(
+          (bug) =>
+            bug.statusNormalized ===
+            "open"
+        ).length;
 
-    const inProgress = bugs.filter(
-      (b) => b.statusNormalized === "in_progress"
-    ).length;
+      const resolved =
+        bugs.filter(
+          (bug) =>
+            bug.statusNormalized ===
+            "resolved"
+        ).length;
 
-    const totalOccurrences = bugs.reduce(
-      (acc, bug) => acc + Number(bug.occurrencesNormalized || 0),
-      0
-    );
+      const inProgress =
+        bugs.filter(
+          (bug) =>
+            bug.statusNormalized ===
+            "in_progress"
+        ).length;
 
-    return {
-      total,
-      critical,
-      open,
-      resolved,
-      inProgress,
-      totalOccurrences,
-    };
-  }, [bugs]);
+      const totalOccurrences =
+        bugs.reduce(
+          (total, bug) =>
+            total +
+            Number(
+              bug.occurrencesNormalized ||
+                0
+            ),
+          0
+        );
+
+      return {
+        total,
+        critical,
+        open,
+        resolved,
+        inProgress,
+        totalOccurrences,
+      };
+    }, [bugs]);
+
+  /* =========================================================
+     VERSÕES DISPONÍVEIS
+  ========================================================= */
+
+  const versions =
+    useMemo(() => {
+      return [
+        ...new Set(
+          bugs
+            .map(
+              (bug) =>
+                bug.appVersion
+            )
+            .filter(Boolean)
+        ),
+      ].sort();
+    }, [bugs]);
+
+  /* =========================================================
+     FILTROS
+  ========================================================= */
+
+  const filteredBugs =
+    useMemo(() => {
+      const term =
+        normalizeText(
+          search
+        );
+
+      return bugs.filter(
+        (bug) => {
+          if (
+            platformFilter !==
+              "all" &&
+            normalizePlatform(
+              bug.platform
+            ) !==
+              platformFilter
+          ) {
+            return false;
+          }
+
+          if (
+            versionFilter !==
+              "all" &&
+            bug.appVersion !==
+              versionFilter
+          ) {
+            return false;
+          }
+
+          if (!term) {
+            return true;
+          }
+
+          const values = [
+            bug.type,
+            bug.mainMessage,
+
+            bug.userName,
+            bug.userEmail,
+            bug.userRole,
+
+            bug.screen,
+            bug.route,
+            bug.module,
+            bug.endpoint,
+
+            bug.manufacturer,
+            bug.model,
+            bug.device,
+
+            bug.platform,
+            bug.osVersion,
+
+            bug.appVersion,
+            bug.buildNumber,
+          ];
+
+          return values.some(
+            (value) =>
+              normalizeText(
+                value
+              ).includes(term)
+          );
+        }
+      );
+    }, [
+      bugs,
+      search,
+      platformFilter,
+      versionFilter,
+    ]);
+
+  /* =========================================================
+     LOADING
+  ========================================================= */
 
   if (loading) {
-    return <div style={{ padding: 24 }}>Carregando bugs...</div>;
+    return (
+      <div style={page}>
+        Carregando bugs...
+      </div>
+    );
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 900 }}>
-          Bugs & Falhas
-        </h1>
+    <div style={page}>
+      {/* ================= HEADER ================= */}
 
-        <p style={{ color: "#64748B" }}>
-          Monitoramento de erros do sistema
-        </p>
+      <div style={header}>
+        <div>
+          <h1 style={title}>
+            Bugs & Falhas
+          </h1>
+
+          <p style={subtitle}>
+            Central de diagnóstico
+            técnico do Tanamão+
+          </p>
+        </div>
       </div>
 
-      <div
-        style={{
-          background: "linear-gradient(135deg,#991B1B,#DC2626)",
-          color: "#fff",
-          padding: 24,
-          borderRadius: 20,
-          marginBottom: 20,
-        }}
-      >
-        <div>Total de bugs únicos</div>
+      {/* ================= DESTAQUE ================= */}
 
-        <div
-          style={{
-            fontSize: 36,
-            fontWeight: 900,
-            marginTop: 6,
-          }}
-        >
+      <div style={hero}>
+        <div style={heroLabel}>
+          Total de bugs únicos
+        </div>
+
+        <div style={heroValue}>
           {metrics.total}
         </div>
 
-        <div
-          style={{
-            marginTop: 8,
-            fontSize: 14,
-            opacity: 0.9,
-          }}
-        >
-          {metrics.totalOccurrences} ocorrência(s) somadas
+        <div style={heroSubtitle}>
+          {metrics.totalOccurrences}{" "}
+          ocorrência(s) registradas
+          no sistema
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))",
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
+      {/* ================= MÉTRICAS ================= */}
+
+      <div style={metricsGrid}>
         <Card
           title="Críticos"
-          value={metrics.critical}
+          value={
+            metrics.critical
+          }
           color="#DC2626"
-          subtitle="Severidade crítica"
+          subtitle="Prioridade máxima"
         />
 
         <Card
@@ -310,139 +501,787 @@ export default function Bugs() {
 
         <Card
           title="Em andamento"
-          value={metrics.inProgress}
+          value={
+            metrics.inProgress
+          }
           color="#2563EB"
-          subtitle="Sendo tratados"
+          subtitle="Sendo investigados"
         />
 
         <Card
           title="Resolvidos"
-          value={metrics.resolved}
+          value={
+            metrics.resolved
+          }
           color="#16A34A"
           subtitle="Já corrigidos"
         />
 
         <Card
           title="Ocorrências"
-          value={metrics.totalOccurrences}
+          value={
+            metrics.totalOccurrences
+          }
           color="#7C3AED"
-          subtitle="Total de vezes que aconteceram"
+          subtitle="Total de incidências"
         />
       </div>
 
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 16,
-          border: "1px solid #E5E7EB",
-          overflowX: "auto",
-        }}
-      >
-        <table style={{ width: "100%", minWidth: 1400, borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#F8FAFC" }}>
-              <th style={th}>Tipo</th>
-              <th style={th}>Resumo do erro</th>
-              <th style={th}>Severidade</th>
-              <th style={th}>Status</th>
-              <th style={th}>Origem</th>
-              <th style={th}>Ocorrências</th>
-              <th style={th}>Primeira ocorrência</th>
-              <th style={th}>Última ocorrência</th>
-              <th style={th}>Criado em</th>
-              <th style={th}>Atualizado em</th>
-            </tr>
-          </thead>
+      {/* ================= FILTROS ================= */}
 
-          <tbody>
-            {bugs.map((b) => (
+      <div style={filters}>
+        <input
+          value={search}
+          onChange={(event) =>
+            setSearch(
+              event.target.value
+            )
+          }
+          placeholder="Buscar usuário, erro, tela, aparelho..."
+          style={input}
+        />
+
+        <select
+          value={
+            platformFilter
+          }
+          onChange={(event) =>
+            setPlatformFilter(
+              event.target.value
+            )
+          }
+          style={select}
+        >
+          <option value="all">
+            Todas as plataformas
+          </option>
+
+          <option value="ios">
+            iOS
+          </option>
+
+          <option value="android">
+            Android
+          </option>
+        </select>
+
+        <select
+          value={
+            versionFilter
+          }
+          onChange={(event) =>
+            setVersionFilter(
+              event.target.value
+            )
+          }
+          style={select}
+        >
+          <option value="all">
+            Todas as versões
+          </option>
+
+          {versions.map(
+            (version) => (
+              <option
+                key={version}
+                value={version}
+              >
+                Versão {version}
+              </option>
+            )
+          )}
+        </select>
+      </div>
+
+      <div style={resultInfo}>
+        Exibindo{" "}
+        <strong>
+          {filteredBugs.length}
+        </strong>{" "}
+        de{" "}
+        <strong>
+          {bugs.length}
+        </strong>{" "}
+        bugs
+      </div>
+
+      {/* ================= TABELA ================= */}
+
+      <div style={tableWrapper}>
+        <div style={tableScroll}>
+          <table style={table}>
+            <thead>
               <tr
-                key={b.id}
-                style={row}
-                onClick={() => navigate(`${b.id}`)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#F8FAFC";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#fff";
+                style={{
+                  background:
+                    "#F8FAFC",
                 }}
               >
-                <td style={td}>
-                  <div style={{ fontWeight: 700, color: "#111827" }}>
-                    {b.type || "—"}
-                  </div>
-                  <div style={mutedText}>
-                    ID: {b.id || "—"}
-                  </div>
-                </td>
+                <th style={th}>
+                  Erro
+                </th>
 
-                <td style={td}>
-                  <div
-                    style={{
-                      maxWidth: 360,
-                      whiteSpace: "normal",
-                      wordBreak: "break-word",
-                      color: "#334155",
+                <th style={th}>
+                  Usuário
+                </th>
+
+                <th style={th}>
+                  Tela
+                </th>
+
+                <th style={th}>
+                  Aparelho
+                </th>
+
+                <th style={th}>
+                  Sistema
+                </th>
+
+                <th style={th}>
+                  App
+                </th>
+
+                <th style={th}>
+                  Severidade
+                </th>
+
+                <th style={th}>
+                  Status
+                </th>
+
+                <th style={th}>
+                  Ocorrências
+                </th>
+
+                <th style={th}>
+                  Última ocorrência
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filteredBugs.map(
+                (bug) => (
+                  <tr
+                    key={bug.id}
+                    style={row}
+                    onClick={() =>
+                      navigate(
+                        `${bug.id}`
+                      )
+                    }
+                    onMouseEnter={(
+                      event
+                    ) => {
+                      event.currentTarget.style.background =
+                        "#F8FAFC";
+                    }}
+                    onMouseLeave={(
+                      event
+                    ) => {
+                      event.currentTarget.style.background =
+                        "#FFFFFF";
                     }}
                   >
-                    {b.mainMessage}
-                  </div>
-                </td>
+                    {/* ERRO */}
 
-                <td style={td}>
-                  <span style={severityBadge(b.severityNormalized)}>
-                    {b.severityNormalized}
-                  </span>
-                </td>
+                    <td style={td}>
+                      <div
+                        style={
+                          errorType
+                        }
+                      >
+                        {bug.type ||
+                          "Erro"}
+                      </div>
 
-                <td style={td}>
-                  <span style={statusBadge(b.statusNormalized)}>
-                    {b.statusNormalized}
-                  </span>
-                </td>
+                      <div
+                        style={
+                          errorMessage
+                        }
+                      >
+                        {truncate(
+                          bug.mainMessage,
+                          100
+                        )}
+                      </div>
 
-                <td style={td}>
-                  <div>{b.source || "—"}</div>
-                  <div style={mutedText}>
-                    {b.module || b.screen || b.route || b.endpoint || "—"}
-                  </div>
-                </td>
+                      <div
+                        style={
+                          mutedText
+                        }
+                      >
+                        ID:{" "}
+                        {shortId(
+                          bug.id
+                        )}
+                      </div>
+                    </td>
 
-                <td style={td}>
-                  <strong>{b.occurrencesNormalized}</strong>
-                </td>
+                    {/* USUÁRIO */}
 
-                <td style={td}>
-                  {formatDateTime(b.firstSeenNormalized)}
-                </td>
+                    <td style={td}>
+                      <div
+                        style={
+                          primaryText
+                        }
+                      >
+                        {bug.userName ||
+                          "Não identificado"}
+                      </div>
 
-                <td style={td}>
-                  {formatDateTime(b.lastSeenNormalized)}
-                </td>
+                      {bug.userEmail && (
+                        <div
+                          style={
+                            mutedText
+                          }
+                        >
+                          {
+                            bug.userEmail
+                          }
+                        </div>
+                      )}
 
-                <td style={td}>
-                  {formatDateTime(b.createdAtNormalized)}
-                </td>
+                      {bug.userRole && (
+                        <div
+                          style={
+                            roleText
+                          }
+                        >
+                          {formatRole(
+                            bug.userRole
+                          )}
+                        </div>
+                      )}
+                    </td>
 
-                <td style={td}>
-                  {formatDateTime(b.updatedAtNormalized)}
-                </td>
-              </tr>
-            ))}
+                    {/* TELA */}
 
-            {!bugs.length && (
-              <tr>
-                <td style={{ ...td, textAlign: "center", color: "#64748B" }} colSpan={10}>
-                  Nenhum bug encontrado
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                    <td style={td}>
+                      <div
+                        style={
+                          primaryText
+                        }
+                      >
+                        {bug.screen ||
+                          bug.module ||
+                          "Não identificada"}
+                      </div>
+
+                      {(bug.route ||
+                        bug.endpoint) && (
+                        <div
+                          style={
+                            mutedText
+                          }
+                        >
+                          {bug.route ||
+                            bug.endpoint}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* APARELHO */}
+
+                    <td style={td}>
+                      <div
+                        style={
+                          primaryText
+                        }
+                      >
+                        {formatDevice(
+                          bug
+                        )}
+                      </div>
+
+                      {bug.manufacturer && (
+                        <div
+                          style={
+                            mutedText
+                          }
+                        >
+                          {
+                            bug.manufacturer
+                          }
+                        </div>
+                      )}
+                    </td>
+
+                    {/* SISTEMA */}
+
+                    <td style={td}>
+                      <div
+                        style={
+                          primaryText
+                        }
+                      >
+                        {formatPlatform(
+                          bug.platform
+                        )}
+                      </div>
+
+                      {bug.osVersion && (
+                        <div
+                          style={
+                            mutedText
+                          }
+                        >
+                          Versão{" "}
+                          {
+                            bug.osVersion
+                          }
+                        </div>
+                      )}
+                    </td>
+
+                    {/* APP */}
+
+                    <td style={td}>
+                      <div
+                        style={
+                          primaryText
+                        }
+                      >
+                        {bug.appVersion
+                          ? `v${bug.appVersion}`
+                          : "—"}
+                      </div>
+
+                      {bug.buildNumber && (
+                        <div
+                          style={
+                            mutedText
+                          }
+                        >
+                          Build{" "}
+                          {
+                            bug.buildNumber
+                          }
+                        </div>
+                      )}
+                    </td>
+
+                    {/* SEVERIDADE */}
+
+                    <td style={td}>
+                      <span
+                        style={severityBadge(
+                          bug.severityNormalized
+                        )}
+                      >
+                        {formatSeverity(
+                          bug.severityNormalized
+                        )}
+                      </span>
+                    </td>
+
+                    {/* STATUS */}
+
+                    <td style={td}>
+                      <span
+                        style={statusBadge(
+                          bug.statusNormalized
+                        )}
+                      >
+                        {formatStatus(
+                          bug.statusNormalized
+                        )}
+                      </span>
+                    </td>
+
+                    {/* OCORRÊNCIAS */}
+
+                    <td style={td}>
+                      <strong>
+                        {
+                          bug.occurrencesNormalized
+                        }
+                      </strong>
+                    </td>
+
+                    {/* ÚLTIMA */}
+
+                    <td style={td}>
+                      {formatDateTime(
+                        bug.lastSeenNormalized
+                      )}
+                    </td>
+                  </tr>
+                )
+              )}
+
+              {!filteredBugs.length && (
+                <tr>
+                  <td
+                    style={{
+                      ...td,
+                      textAlign:
+                        "center",
+                      color:
+                        "#64748B",
+                      padding: 30,
+                    }}
+                    colSpan={10}
+                  >
+                    Nenhum bug
+                    encontrado
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function getBugMainMessage(
+  bug
+) {
+  return (
+    bug.message ||
+    bug.errorMessage ||
+    bug.description ||
+    bug.details ||
+    bug.stackPreview ||
+    "Sem descrição"
+  );
+}
+
+function getOccurrences(
+  bug
+) {
+  return (
+    bug.occurrences ??
+    bug.count ??
+    bug.totalOccurrences ??
+    bug.total ??
+    bug.hits ??
+    1
+  );
+}
+
+function formatDevice(bug) {
+  return (
+    bug.model ||
+    bug.device ||
+    "Não identificado"
+  );
+}
+
+function normalizePlatform(
+  value
+) {
+  const platform =
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  if (
+    platform.includes(
+      "ios"
+    ) ||
+    platform.includes(
+      "iphone"
+    )
+  ) {
+    return "ios";
+  }
+
+  if (
+    platform.includes(
+      "android"
+    )
+  ) {
+    return "android";
+  }
+
+  return platform;
+}
+
+function formatPlatform(
+  value
+) {
+  const platform =
+    normalizePlatform(value);
+
+  if (platform === "ios") {
+    return "iOS";
+  }
+
+  if (
+    platform === "android"
+  ) {
+    return "Android";
+  }
+
+  return value || "—";
+}
+
+function formatRole(value) {
+  const roles = {
+    cliente: "Cliente",
+    profissional:
+      "Prestador",
+    empresa: "Empresa",
+    motorista:
+      "Motorista",
+    admin:
+      "Administrador",
+  };
+
+  return (
+    roles[value] ||
+    value
+  );
+}
+
+function formatSeverity(
+  value
+) {
+  const labels = {
+    critical:
+      "Crítico",
+    medium:
+      "Médio",
+    low:
+      "Baixo",
+  };
+
+  return (
+    labels[value] ||
+    value
+  );
+}
+
+function formatStatus(value) {
+  const labels = {
+    open: "Aberto",
+    in_progress:
+      "Em andamento",
+    resolved:
+      "Resolvido",
+  };
+
+  return (
+    labels[value] ||
+    value
+  );
+}
+
+function formatDateTime(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      dateStyle: "short",
+      timeStyle: "short",
+    }
+  ).format(date);
+}
+
+function normalizeText(
+  value
+) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .toLowerCase()
+    .trim();
+}
+
+function truncate(
+  value,
+  max
+) {
+  const text =
+    String(value || "");
+
+  if (
+    text.length <= max
+  ) {
+    return text;
+  }
+
+  return `${text.slice(
+    0,
+    max
+  )}...`;
+}
+
+function shortId(id) {
+  if (!id) {
+    return "—";
+  }
+
+  return String(id).slice(
+    -8
+  );
+}
+
+/* =========================================================
+   STYLES
+========================================================= */
+
+const page = {
+  padding: 24,
+  background: "#F8FAFC",
+  minHeight: "100vh",
+};
+
+const header = {
+  marginBottom: 24,
+};
+
+const title = {
+  margin: 0,
+  fontSize: 26,
+  fontWeight: 900,
+  color: "#111827",
+};
+
+const subtitle = {
+  color: "#64748B",
+  marginTop: 6,
+};
+
+const hero = {
+  background:
+    "linear-gradient(135deg,#991B1B,#DC2626)",
+  color: "#FFFFFF",
+  padding: 24,
+  borderRadius: 20,
+  marginBottom: 20,
+};
+
+const heroLabel = {
+  fontSize: 14,
+};
+
+const heroValue = {
+  fontSize: 36,
+  fontWeight: 900,
+  marginTop: 6,
+};
+
+const heroSubtitle = {
+  marginTop: 8,
+  fontSize: 14,
+  opacity: 0.9,
+};
+
+const metricsGrid = {
+  display: "grid",
+  gridTemplateColumns:
+    "repeat(auto-fit,minmax(180px,1fr))",
+  gap: 16,
+  marginBottom: 20,
+};
+
+const cardStyle = {
+  background: "#FFFFFF",
+  borderRadius: 18,
+  padding: 20,
+  border:
+    "1px solid #E5E7EB",
+  boxShadow:
+    "0 2px 8px rgba(0,0,0,0.04)",
+};
+
+const cardTitle = {
+  fontSize: 12,
+  fontWeight: 700,
+  color: "#64748B",
+  marginBottom: 8,
+  textTransform:
+    "uppercase",
+  letterSpacing: 0.4,
+};
+
+const cardValue = {
+  fontSize: 28,
+  fontWeight: 900,
+  lineHeight: 1,
+};
+
+const cardSubtitle = {
+  marginTop: 8,
+  fontSize: 12,
+  color: "#94A3B8",
+};
+
+const filters = {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap",
+  marginBottom: 10,
+};
+
+const input = {
+  flex: "1 1 320px",
+  padding: "11px 13px",
+  borderRadius: 10,
+  border:
+    "1px solid #D1D5DB",
+  background: "#FFFFFF",
+};
+
+const select = {
+  padding: "11px 13px",
+  borderRadius: 10,
+  border:
+    "1px solid #D1D5DB",
+  background: "#FFFFFF",
+};
+
+const resultInfo = {
+  fontSize: 12,
+  color: "#64748B",
+  marginBottom: 12,
+};
+
+const tableWrapper = {
+  background: "#FFFFFF",
+  borderRadius: 16,
+  border:
+    "1px solid #E5E7EB",
+  overflow: "hidden",
+};
+
+const tableScroll = {
+  overflowX: "auto",
+};
+
+const table = {
+  width: "100%",
+  minWidth: 1650,
+  borderCollapse:
+    "collapse",
+};
 
 const th = {
   padding: 14,
@@ -450,14 +1289,17 @@ const th = {
   fontSize: 12,
   fontWeight: 800,
   color: "#64748B",
-  borderBottom: "1px solid #E5E7EB",
+  borderBottom:
+    "1px solid #E5E7EB",
   whiteSpace: "nowrap",
 };
 
 const td = {
   padding: 14,
-  borderTop: "1px solid #F1F5F9",
+  borderTop:
+    "1px solid #F1F5F9",
   verticalAlign: "top",
+  fontSize: 13,
 };
 
 const row = {
@@ -465,58 +1307,102 @@ const row = {
   transition: "0.15s",
 };
 
-const mutedText = {
-  marginTop: 4,
-  fontSize: 12,
-  color: "#94A3B8",
+const primaryText = {
+  fontWeight: 700,
+  color: "#111827",
 };
 
-const severityBadge = (s) => ({
+const errorType = {
+  fontWeight: 800,
+  color: "#991B1B",
+};
+
+const errorMessage = {
+  marginTop: 4,
+  maxWidth: 330,
+  color: "#334155",
+  lineHeight: 1.4,
+};
+
+const mutedText = {
+  marginTop: 4,
+  fontSize: 11,
+  color: "#94A3B8",
+  overflowWrap:
+    "anywhere",
+};
+
+const roleText = {
+  marginTop: 5,
+  display: "inline-block",
+  padding: "3px 7px",
+  borderRadius: 999,
+  background: "#F1F5F9",
+  color: "#475569",
+  fontSize: 10,
+  fontWeight: 700,
+};
+
+const severityBadge = (
+  severity
+) => ({
   background:
-    s === "critical"
+    severity === "critical"
       ? "#FEE2E2"
-      : s === "medium"
+      : severity ===
+        "medium"
       ? "#FEF3C7"
-      : s === "low"
+      : severity === "low"
       ? "#DCFCE7"
       : "#E2E8F0",
+
   color:
-    s === "critical"
+    severity === "critical"
       ? "#991B1B"
-      : s === "medium"
+      : severity ===
+        "medium"
       ? "#92400E"
-      : s === "low"
+      : severity === "low"
       ? "#166534"
       : "#334155",
-  padding: "4px 8px",
+
+  padding: "5px 9px",
   borderRadius: 6,
   fontSize: 12,
   fontWeight: 700,
-  display: "inline-block",
-  textTransform: "capitalize",
+  display:
+    "inline-block",
+  whiteSpace: "nowrap",
 });
 
-const statusBadge = (s) => ({
+const statusBadge = (
+  status
+) => ({
   background:
-    s === "resolved"
+    status === "resolved"
       ? "#DCFCE7"
-      : s === "open"
+      : status === "open"
       ? "#FEF3C7"
-      : s === "in_progress"
+      : status ===
+        "in_progress"
       ? "#DBEAFE"
       : "#E2E8F0",
+
   color:
-    s === "resolved"
+    status === "resolved"
       ? "#166534"
-      : s === "open"
+      : status === "open"
       ? "#92400E"
-      : s === "in_progress"
+      : status ===
+        "in_progress"
       ? "#1D4ED8"
       : "#334155",
-  padding: "4px 8px",
+
+  padding: "5px 9px",
   borderRadius: 6,
   fontSize: 12,
   fontWeight: 700,
-  display: "inline-block",
-  textTransform: "capitalize",
+  display:
+    "inline-block",
+  whiteSpace: "nowrap",
 });
