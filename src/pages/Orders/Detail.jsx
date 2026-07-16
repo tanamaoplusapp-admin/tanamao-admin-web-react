@@ -1,282 +1,1014 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import API from "../../services/api";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
+import api from "../../services/api";
 
 export default function OrderDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
-  const [service, setService] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const navigate =
+    useNavigate();
+
+  const [
+    service,
+    setService,
+  ] = useState(null);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  /* =========================================================
+     CARREGAR SERVIÇO REAL
+  ========================================================= */
 
   useEffect(() => {
-    load();
+    async function load() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response =
+          await api.get(
+            `/admin/servicos/${id}`
+          );
+
+        const data =
+          response.data;
+
+        const servico =
+          data?.service ||
+          data?.servico ||
+          data;
+
+        setService(
+          servico || null
+        );
+      } catch (err) {
+        console.error(
+          "Erro ao carregar serviço:",
+          err
+        );
+
+        setError(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Não foi possível carregar o serviço."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (id) {
+      load();
+    }
   }, [id]);
 
-  async function load() {
-    try {
-      setLoading(true);
-      setError(null);
+  /* =========================================================
+     LOADING
+  ========================================================= */
 
-      const res = await API.get(`/admin/servicos/${id}`);
-      const data = res.data;
-
-      setService(data?.service || data?.servico || data || null);
-    } catch (err) {
-      console.error("[OrderDetail] Erro ao carregar serviço:", err);
-      setError("Erro ao carregar serviço");
-    } finally {
-      setLoading(false);
-    }
+  if (loading) {
+    return (
+      <div style={page}>
+        Carregando serviço...
+      </div>
+    );
   }
 
-  if (loading) return <div style={page}>Carregando...</div>;
-  if (error) return <div style={page}>{error}</div>;
-  if (!service) return <div style={page}>Não encontrado</div>;
+  /* =========================================================
+     ERRO
+  ========================================================= */
 
-  const longitude = service.location?.coordinates?.[0];
-  const latitude = service.location?.coordinates?.[1];
+  if (error) {
+    return (
+      <div style={page}>
+        <button
+          onClick={() =>
+            navigate(-1)
+          }
+          style={backButton}
+        >
+          ← Voltar
+        </button>
 
-  const valor =
-    service.valorFinal ??
-    service.price ??
-    service.valor ??
-    null;
+        <div style={errorBox}>
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!service) {
+    return (
+      <div style={page}>
+        Serviço não encontrado.
+      </div>
+    );
+  }
+
+  const cliente =
+    service.cliente;
+
+  const profissional =
+    service.profissional;
+
+  const empresa =
+    service.empresa;
 
   return (
     <div style={page}>
-      <button onClick={() => navigate("/orders")} style={backBtn}>
+      {/* ================= VOLTAR ================= */}
+
+      <button
+        onClick={() =>
+          navigate(-1)
+        }
+        style={backButton}
+      >
         ← Voltar
       </button>
 
-      <h2 style={title}>Detalhe do Serviço</h2>
+      {/* ================= HEADER ================= */}
 
-      <div style={grid}>
-        <Card title="Serviço">
-          <Info label="ID" value={service._id} />
-          <Info label="Tipo" value={tipoServicoLabel(service.tipoServico)} />
-          <Info label="Categoria" value={service.categoria} />
-          <Info label="Descrição" value={service.descricao} />
-          <Info label="Status" value={statusLabel(service.status)} />
-          <Info label="Urgente" value={service.urgente ? "Sim" : "Não"} />
-          <Info label="Valor" value={money(valor)} />
-          <Info label="Criado em" value={date(service.createdAt)} />
-        </Card>
+      <div style={header}>
+        <div>
+          <h1 style={title}>
+            Serviço #
+            {shortId(
+              service._id
+            )}
+          </h1>
 
-        <Card title="Cliente">
-          <Info label="Nome" value={service.cliente?.name || service.cliente?.nome} />
-          <Info label="Email" value={service.cliente?.email} />
-          <Info
-            label="Telefone"
+          <p style={subtitle}>
+            Detalhes completos da
+            solicitação
+          </p>
+        </div>
+
+        <StatusBadge
+          status={
+            service.status
+          }
+        />
+      </div>
+
+      {/* ================= RESUMO ================= */}
+
+      <div style={summaryGrid}>
+        <InfoCard
+          label="Tipo"
+          value={formatType(
+            service.tipoServico
+          )}
+        />
+
+        <InfoCard
+          label="Categoria"
+          value={
+            service.categoria ||
+            "—"
+          }
+        />
+
+        <InfoCard
+          label="Valor"
+          value={getServiceValue(
+            service
+          )}
+        />
+
+        <InfoCard
+          label="Criado em"
+          value={formatDate(
+            service.createdAt
+          )}
+        />
+      </div>
+
+      {/* ================= PESSOAS ================= */}
+
+      <div style={twoColumns}>
+        {/* CLIENTE */}
+
+        <section style={section}>
+          <h2 style={sectionTitle}>
+            Cliente
+          </h2>
+
+          <PersonDetail
+            person={cliente}
+            emptyLabel="Cliente não encontrado"
+          />
+        </section>
+
+        {/* PRESTADOR */}
+
+        <section style={section}>
+          <h2 style={sectionTitle}>
+            Prestador
+          </h2>
+
+          <PersonDetail
+            person={
+              profissional
+            }
+            emptyLabel="Prestador ainda não definido"
+          />
+        </section>
+      </div>
+
+      {/* ================= SERVIÇO ================= */}
+
+      <section style={section}>
+        <h2 style={sectionTitle}>
+          Informações do serviço
+        </h2>
+
+        <div style={detailsGrid}>
+          <DetailItem
+            label="ID"
             value={
-              service.cliente?.telefone ||
-              service.cliente?.phone ||
-              service.cliente?.celular
+              service._id
             }
           />
-        </Card>
 
-        <Card title="Prestador">
-          <Info
-            label="Nome"
-            value={service.profissional?.name || service.profissional?.nome}
+          <DetailItem
+            label="Tipo"
+            value={formatType(
+              service.tipoServico
+            )}
           />
-          <Info label="Email" value={service.profissional?.email} />
-          <Info
-            label="Telefone"
+
+          <DetailItem
+            label="Categoria"
             value={
-              service.profissional?.telefone ||
-              service.profissional?.phone ||
-              service.profissional?.celular
+              service.categoria ||
+              "—"
             }
           />
-        </Card>
 
-        <Card title="Localização">
-          <Info label="Endereço" value={service.endereco} />
-          <Info label="Latitude" value={latitude} />
-          <Info label="Longitude" value={longitude} />
-        </Card>
+          <DetailItem
+            label="Status"
+            value={formatStatus(
+              service.status
+            )}
+          />
 
-        <Card title="Agendamento">
-          <Info label="Data agendada" value={service.dataAgendada} />
-          <Info label="Hora agendada" value={service.horaAgendada} />
-          <Info label="Valor final" value={money(service.valorFinal)} />
-        </Card>
+          <DetailItem
+            label="Urgente"
+            value={
+              service.urgente
+                ? "Sim"
+                : "Não"
+            }
+          />
 
-        <Card title="Pagamento">
-          <Info label="Método" value={paymentMethodLabel(service.payment?.method)} />
-          <Info label="Status" value={paymentStatusLabel(service.payment?.status)} />
-          <Info label="TX ID" value={service.payment?.txId} />
-        </Card>
+          <DetailItem
+            label="Preço inicial"
+            value={formatMoneyOrDash(
+              service.price
+            )}
+          />
 
-        <Card title="Chat">
-          <Info label="Chat ID" value={service.chatId?._id || service.chatId} />
-        </Card>
+          <DetailItem
+            label="Valor final"
+            value={formatMoneyOrDash(
+              service.valorFinal
+            )}
+          />
 
-        <Card title="Métricas">
-          <Info label="Respondido em" value={date(service.respondidoEm)} />
-          <Info
+          <DetailItem
+            label="Data agendada"
+            value={
+              service.dataAgendada ||
+              "—"
+            }
+          />
+
+          <DetailItem
+            label="Hora agendada"
+            value={
+              service.horaAgendada ||
+              "—"
+            }
+          />
+
+          <DetailItem
             label="Tempo de resposta"
-            value={seconds(service.tempoRespostaSegundos)}
+            value={formatResponseTime(
+              service.tempoRespostaSegundos
+            )}
           />
-          <Info label="SLA expira em" value={date(service.slaExpiraEm)} />
-          <Info label="Expirado" value={service.expirado ? "Sim" : "Não"} />
-        </Card>
+
+          <DetailItem
+            label="Criado em"
+            value={formatDate(
+              service.createdAt
+            )}
+          />
+
+          <DetailItem
+            label="Atualizado em"
+            value={formatDate(
+              service.updatedAt
+            )}
+          />
+        </div>
+      </section>
+
+      {/* ================= DESCRIÇÃO ================= */}
+
+      <section style={section}>
+        <h2 style={sectionTitle}>
+          Descrição
+        </h2>
+
+        <p style={description}>
+          {service.descricao ||
+            "Nenhuma descrição informada."}
+        </p>
+      </section>
+
+      {/* ================= EMPRESA ================= */}
+
+      {empresa && (
+        <section style={section}>
+          <h2 style={sectionTitle}>
+            Empresa
+          </h2>
+
+          <DetailItem
+            label="Nome"
+            value={
+              empresa.name ||
+              empresa.nome ||
+              "—"
+            }
+          />
+        </section>
+      )}
+
+      {/* ================= PAGAMENTO ================= */}
+
+      <section style={section}>
+        <h2 style={sectionTitle}>
+          Pagamento do serviço
+        </h2>
+
+        <div style={detailsGrid}>
+          <DetailItem
+            label="Método"
+            value={
+              service.payment
+                ?.method ||
+              "—"
+            }
+          />
+
+          <DetailItem
+            label="Status"
+            value={formatPaymentStatus(
+              service.payment
+                ?.status
+            )}
+          />
+
+          <DetailItem
+            label="ID da transação"
+            value={
+              service.payment
+                ?.txId ||
+              "—"
+            }
+          />
+        </div>
+      </section>
+
+      {/* ================= IDs RELACIONADOS ================= */}
+
+      <section style={section}>
+        <h2 style={sectionTitle}>
+          Dados técnicos
+        </h2>
+
+        <div style={detailsGrid}>
+          <DetailItem
+            label="ID do cliente"
+            value={
+              getPersonId(
+                cliente
+              ) || "—"
+            }
+          />
+
+          <DetailItem
+            label="ID do prestador"
+            value={
+              getPersonId(
+                profissional
+              ) || "—"
+            }
+          />
+
+          <DetailItem
+            label="Chat"
+            value={
+              getReferenceId(
+                service.chatId
+              ) || "—"
+            }
+          />
+
+          <DetailItem
+            label="Categoria ID"
+            value={
+              getReferenceId(
+                service.categoriaId
+              ) || "—"
+            }
+          />
+
+          <DetailItem
+            label="Profissão ID"
+            value={
+              getReferenceId(
+                service.profissaoId
+              ) || "—"
+            }
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* =========================================================
+   COMPONENTES
+========================================================= */
+
+function InfoCard({
+  label,
+  value,
+}) {
+  return (
+    <div style={infoCard}>
+      <span style={infoLabel}>
+        {label}
+      </span>
+
+      <strong style={infoValue}>
+        {value ?? "—"}
+      </strong>
+    </div>
+  );
+}
+
+function PersonDetail({
+  person,
+  emptyLabel,
+}) {
+  if (
+    !person ||
+    typeof person !==
+      "object"
+  ) {
+    return (
+      <div style={emptyPerson}>
+        {emptyLabel}
+      </div>
+    );
+  }
+
+  const name =
+    person.name ||
+    person.nome ||
+    "Nome não informado";
+
+  const phone =
+    person.telefone ||
+    person.phone ||
+    person.celular;
+
+  return (
+    <div>
+      <div style={personName}>
+        {name}
+      </div>
+
+      <div style={personDetails}>
+        <DetailItem
+          label="E-mail"
+          value={
+            person.email ||
+            "—"
+          }
+        />
+
+        <DetailItem
+          label="Telefone"
+          value={
+            phone || "—"
+          }
+        />
+
+        <DetailItem
+          label="ID"
+          value={
+            person._id ||
+            "—"
+          }
+        />
+
+        {person.cidade && (
+          <DetailItem
+            label="Cidade"
+            value={
+              typeof person.cidade ===
+              "string"
+                ? person.cidade
+                : person.cidade
+                    ?.nome ||
+                  "—"
+            }
+          />
+        )}
+
+        {person.rating !=
+          null && (
+          <DetailItem
+            label="Avaliação"
+            value={String(
+              person.rating
+            )}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function Card({ title, children }) {
+function DetailItem({
+  label,
+  value,
+}) {
   return (
-    <div style={card}>
-      <div style={cardTitle}>{title}</div>
-      {children}
+    <div style={detailItem}>
+      <span style={detailLabel}>
+        {label}
+      </span>
+
+      <div style={detailValue}>
+        {value ?? "—"}
+      </div>
     </div>
   );
 }
 
-function Info({ label, value }) {
-  return (
-    <div style={info}>
-      <strong>{label}</strong>
-      <div>{formatValue(value)}</div>
-    </div>
-  );
-}
+function StatusBadge({
+  status,
+}) {
+  const config = {
+    pendente: {
+      label: "Pendente",
+      color: "#92400E",
+      background: "#FEF3C7",
+    },
 
-function formatValue(value) {
-  if (value === null || value === undefined || value === "") return "-";
-  return String(value);
-}
+    aceito: {
+      label: "Aceito",
+      color: "#1D4ED8",
+      background: "#DBEAFE",
+    },
 
-function money(v) {
-  if (v === null || v === undefined || v === "") return "-";
+    em_rota: {
+      label: "Em rota",
+      color: "#6D28D9",
+      background: "#EDE9FE",
+    },
 
-  const number = Number(v);
+    pago: {
+      label: "Pago",
+      color: "#047857",
+      background: "#D1FAE5",
+    },
 
-  if (!Number.isFinite(number)) return "-";
+    finalizado: {
+      label: "Finalizado",
+      color: "#15803D",
+      background: "#DCFCE7",
+    },
 
-  return number.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
+    cancelado: {
+      label: "Cancelado",
+      color: "#DC2626",
+      background: "#FEE2E2",
+    },
 
-function date(d) {
-  if (!d) return "-";
-
-  const parsed = new Date(d);
-
-  if (Number.isNaN(parsed.getTime())) return "-";
-
-  return parsed.toLocaleString("pt-BR");
-}
-
-function seconds(v) {
-  if (v === null || v === undefined || v === "") return "-";
-
-  const number = Number(v);
-
-  if (!Number.isFinite(number)) return "-";
-
-  if (number < 60) return `${number}s`;
-
-  const minutes = Math.floor(number / 60);
-  const remainingSeconds = number % 60;
-
-  return `${minutes}min ${remainingSeconds}s`;
-}
-
-function tipoServicoLabel(tipo) {
-  const map = {
-    normal: "Normal",
-    orcamento: "Orçamento",
-    agendado: "Agendado",
-    emergencial: "Emergencial",
+    expirado: {
+      label: "Expirado",
+      color: "#6B7280",
+      background: "#F3F4F6",
+    },
   };
 
-  return map[tipo] || tipo || "-";
+  const current =
+    config[status] || {
+      label: status || "—",
+      color: "#374151",
+      background: "#F3F4F6",
+    };
+
+  return (
+    <span
+      style={{
+        display:
+          "inline-block",
+        padding: "7px 12px",
+        borderRadius: 999,
+        fontSize: 13,
+        fontWeight: 800,
+        color: current.color,
+        background:
+          current.background,
+      }}
+    >
+      {current.label}
+    </span>
+  );
 }
 
-function statusLabel(status) {
-  const map = {
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function getPersonId(
+  person
+) {
+  if (!person) {
+    return null;
+  }
+
+  if (
+    typeof person === "string"
+  ) {
+    return person;
+  }
+
+  return (
+    person._id ||
+    person.id ||
+    null
+  );
+}
+
+function getReferenceId(
+  reference
+) {
+  if (!reference) {
+    return null;
+  }
+
+  if (
+    typeof reference ===
+    "string"
+  ) {
+    return reference;
+  }
+
+  return (
+    reference._id ||
+    reference.id ||
+    null
+  );
+}
+
+function getServiceValue(
+  service
+) {
+  const value =
+    service.valorFinal ??
+    service.price;
+
+  return formatMoneyOrDash(
+    value
+  );
+}
+
+function formatMoneyOrDash(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "—";
+  }
+
+  return Number(
+    value
+  ).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL",
+    }
+  );
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(
+    value
+  ).toLocaleString(
+    "pt-BR"
+  );
+}
+
+function formatType(type) {
+  const types = {
+    normal:
+      "Solicitação de serviço",
+
+    orcamento:
+      "Solicitação de orçamento",
+
+    agendado:
+      "Agendamento",
+  };
+
+  return (
+    types[type] ||
+    type ||
+    "—"
+  );
+}
+
+function formatStatus(
+  status
+) {
+  const statuses = {
     pendente: "Pendente",
     aceito: "Aceito",
     em_rota: "Em rota",
     pago: "Pago",
-    finalizado: "Finalizado",
-    cancelado: "Cancelado",
-    expirado: "Expirado",
+    finalizado:
+      "Finalizado",
+    cancelado:
+      "Cancelado",
+    expirado:
+      "Expirado",
   };
 
-  return map[status] || status || "-";
+  return (
+    statuses[status] ||
+    status ||
+    "—"
+  );
 }
 
-function paymentMethodLabel(method) {
-  const map = {
-    Pix: "PIX",
-    pix: "PIX",
-    Cartao: "Cartão",
-    card: "Cartão",
-    cash: "Dinheiro",
-    Dinheiro: "Dinheiro",
+function formatPaymentStatus(
+  status
+) {
+  const statuses = {
+    pending:
+      "Pendente",
+
+    approved:
+      "Aprovado",
+
+    rejected:
+      "Rejeitado",
+
+    refunded:
+      "Reembolsado",
   };
 
-  return map[method] || method || "-";
+  return (
+    statuses[status] ||
+    status ||
+    "—"
+  );
 }
 
-function paymentStatusLabel(status) {
-  const map = {
-    pending: "Pendente",
-    approved: "Aprovado",
-    rejected: "Rejeitado",
-    refunded: "Estornado",
-  };
+function formatResponseTime(
+  seconds
+) {
+  if (
+    seconds === null ||
+    seconds === undefined
+  ) {
+    return "—";
+  }
 
-  return map[status] || status || "-";
+  const value =
+    Number(seconds);
+
+  if (value < 60) {
+    return `${value} segundos`;
+  }
+
+  const minutes =
+    Math.floor(
+      value / 60
+    );
+
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours =
+    Math.floor(
+      minutes / 60
+    );
+
+  const remainingMinutes =
+    minutes % 60;
+
+  return `${hours}h ${remainingMinutes}min`;
 }
+
+function shortId(id) {
+  if (!id) {
+    return "—";
+  }
+
+  return String(id).slice(-8);
+}
+
+/* =========================================================
+   STYLES
+========================================================= */
 
 const page = {
+  minHeight: "100vh",
   padding: 24,
   background: "#F9FAFB",
-  minHeight: "100vh",
+  color: "#111827",
 };
 
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 20,
-};
-
-const backBtn = {
-  background: "transparent",
+const backButton = {
   border: "none",
-  marginBottom: 20,
+  background: "transparent",
+  color: "#14532D",
+  fontSize: 14,
+  fontWeight: 800,
   cursor: "pointer",
-  fontWeight: 700,
+  padding: 0,
+  marginBottom: 20,
+};
+
+const header = {
+  display: "flex",
+  justifyContent:
+    "space-between",
+  alignItems: "center",
+  gap: 20,
+  marginBottom: 24,
 };
 
 const title = {
-  fontSize: 22,
+  margin: 0,
+  color: "#14532D",
+  fontSize: 26,
   fontWeight: 900,
+};
+
+const subtitle = {
+  marginTop: 5,
+  marginBottom: 0,
+  color: "#64748B",
+};
+
+const summaryGrid = {
+  display: "grid",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: 16,
   marginBottom: 20,
 };
 
-const card = {
-  background: "#fff",
+const infoCard = {
+  background: "#FFFFFF",
+  border:
+    "1px solid #E5E7EB",
+  borderRadius: 14,
+  padding: 18,
+};
+
+const infoLabel = {
+  display: "block",
+  fontSize: 12,
+  fontWeight: 700,
+  color: "#64748B",
+  marginBottom: 6,
+};
+
+const infoValue = {
+  fontSize: 17,
+  color: "#111827",
+};
+
+const twoColumns = {
+  display: "grid",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 20,
+  marginBottom: 20,
+};
+
+const section = {
+  background: "#FFFFFF",
+  border:
+    "1px solid #E5E7EB",
+  borderRadius: 14,
   padding: 20,
+  marginBottom: 20,
+};
+
+const sectionTitle = {
+  marginTop: 0,
+  marginBottom: 18,
+  color: "#14532D",
+  fontSize: 17,
+  fontWeight: 900,
+};
+
+const detailsGrid = {
+  display: "grid",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(200px, 1fr))",
+  gap: 18,
+};
+
+const personDetails = {
+  display: "grid",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: 16,
+};
+
+const personName = {
+  fontSize: 20,
+  fontWeight: 900,
+  color: "#111827",
+  marginBottom: 18,
+};
+
+const detailItem = {
+  minWidth: 0,
+};
+
+const detailLabel = {
+  display: "block",
+  color: "#64748B",
+  fontSize: 12,
+  fontWeight: 700,
+  marginBottom: 5,
+};
+
+const detailValue = {
+  color: "#111827",
+  fontSize: 14,
+  fontWeight: 600,
+  overflowWrap:
+    "anywhere",
+};
+
+const description = {
+  margin: 0,
+  lineHeight: 1.6,
+  color: "#374151",
+  whiteSpace: "pre-wrap",
+};
+
+const emptyPerson = {
+  color: "#94A3B8",
+  fontSize: 14,
+};
+
+const errorBox = {
+  padding: 16,
   borderRadius: 12,
-  border: "1px solid #E5E7EB",
-};
-
-const cardTitle = {
-  fontWeight: 800,
-  marginBottom: 12,
-};
-
-const info = {
-  marginBottom: 12,
+  color: "#DC2626",
+  background: "#FEF2F2",
+  border:
+    "1px solid #FECACA",
 };

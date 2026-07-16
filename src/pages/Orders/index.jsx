@@ -1,444 +1,919 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Page from "../../layout/Page";
-import API from "../../services/api";
+import api from "../../services/api";
 
 export default function Orders() {
   const navigate = useNavigate();
 
-  const [services, setServices] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-
+  const [servicos, setServicos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
+  const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("abertos");
 
-  useEffect(() => {
-    load();
-  }, []);
+  /* =========================================================
+     CARREGAR SERVIÇOS REAIS
+  ========================================================= */
 
-  useEffect(() => {
-    filter();
-  }, [services, search, status]);
-
-  async function load() {
+  async function loadServices() {
     try {
       setLoading(true);
-      setError(null);
+      setError("");
 
-      const res = await API.get("/admin/servicos");
-      const data = normalizeServicesResponse(res.data);
+      const params = {};
 
-      setServices(data);
+      if (status && status !== "all") {
+        params.status = status;
+      }
+
+      if (search.trim()) {
+        params.q = search.trim();
+      }
+
+      const response = await api.get(
+        "/admin/servicos",
+        {
+          params,
+        }
+      );
+
+      const data = response.data;
+
+      const lista = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.servicos)
+        ? data.servicos
+        : [];
+
+      setServicos(lista);
     } catch (err) {
-      console.error("[Orders] Erro ao carregar serviços:", err);
-      setError("Erro ao carregar serviços");
+      console.error(
+        "Erro ao carregar serviços:",
+        err
+      );
+
+      setError(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          "Não foi possível carregar os serviços."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  function filter() {
-    let list = [...services];
+  /* =========================================================
+     CARREGAMENTO
+  ========================================================= */
 
-    if (status === "abertos") {
-      list = list.filter((service) => isOpenService(service.status));
-    } else if (status !== "all") {
-      list = list.filter((service) => service.status === status);
+  useEffect(() => {
+    loadServices();
+  }, [status]);
+
+  /* =========================================================
+     BUSCA LOCAL
+
+     O backend também aceita ?q=, mas deixamos a filtragem
+     local para a busca responder imediatamente.
+  ========================================================= */
+
+  const filteredServices = useMemo(() => {
+    const term = search
+      .trim()
+      .toLowerCase();
+
+    if (!term) {
+      return servicos;
     }
 
-    if (search.trim()) {
-      const term = search.toLowerCase().trim();
-
-      list = list.filter((service) => {
-        const id = String(service._id || "").toLowerCase();
-
-        const cliente = String(
-          service.cliente?.name ||
-            service.cliente?.nome ||
-            service.clienteNome ||
-            ""
+    return servicos.filter((servico) => {
+      const cliente =
+        getPersonName(
+          servico.cliente
         ).toLowerCase();
 
-        const profissional = String(
-          service.profissional?.name ||
-            service.profissional?.nome ||
-            service.profissionalNome ||
-            ""
+      const profissional =
+        getPersonName(
+          servico.profissional
         ).toLowerCase();
 
-        const categoria = String(service.categoria || "").toLowerCase();
-        const descricao = String(service.descricao || "").toLowerCase();
-        const tipo = String(service.tipoServico || "").toLowerCase();
-        const statusText = String(service.status || "").toLowerCase();
+      const categoria = String(
+        servico.categoria || ""
+      ).toLowerCase();
 
-        return (
-          id.includes(term) ||
-          cliente.includes(term) ||
-          profissional.includes(term) ||
-          categoria.includes(term) ||
-          descricao.includes(term) ||
-          tipo.includes(term) ||
-          statusText.includes(term)
-        );
-      });
-    }
+      const descricao = String(
+        servico.descricao || ""
+      ).toLowerCase();
 
-    setFiltered(list);
-  }
+      const id = String(
+        servico._id || ""
+      ).toLowerCase();
 
-  if (loading) {
-    return <Page title="Serviços">Carregando...</Page>;
-  }
+      return (
+        cliente.includes(term) ||
+        profissional.includes(term) ||
+        categoria.includes(term) ||
+        descricao.includes(term) ||
+        id.includes(term)
+      );
+    });
+  }, [servicos, search]);
 
-  if (error) {
-    return <Page title="Serviços">{error}</Page>;
-  }
+  /* =========================================================
+     RESUMO
+  ========================================================= */
+
+  const resumo = useMemo(() => {
+    return {
+      total: servicos.length,
+
+      pendentes: servicos.filter(
+        (item) =>
+          item.status === "pendente"
+      ).length,
+
+      aceitos: servicos.filter(
+        (item) =>
+          item.status === "aceito"
+      ).length,
+
+      finalizados: servicos.filter(
+        (item) =>
+          item.status === "finalizado"
+      ).length,
+
+      cancelados: servicos.filter(
+        (item) =>
+          item.status === "cancelado"
+      ).length,
+    };
+  }, [servicos]);
 
   return (
-    <Page title="Serviços" subtitle="Central completa de serviços Tanamão+">
-      <div style={summaryGrid}>
-        <SummaryCard label="Abertos" value={countByGroup(services, "abertos")} />
-        <SummaryCard label="Pendentes" value={countByStatus(services, "pendente")} />
-        <SummaryCard label="Aceitos" value={countByStatus(services, "aceito")} />
-        <SummaryCard label="Em rota" value={countByStatus(services, "em_rota")} />
-        <SummaryCard label="Pagos" value={countByStatus(services, "pago")} />
-        <SummaryCard label="Finalizados" value={countByStatus(services, "finalizado")} />
-        <SummaryCard label="Cancelados" value={countByStatus(services, "cancelado")} />
-        <SummaryCard label="Expirados" value={countByStatus(services, "expirado")} />
+    <div style={page}>
+      {/* ================= HEADER ================= */}
+
+      <div style={header}>
+        <div>
+          <h1 style={title}>
+            Serviços
+          </h1>
+
+          <p style={subtitle}>
+            Acompanhe as solicitações reais
+            realizadas no Tanamão+
+          </p>
+        </div>
+
+        <button
+          style={refreshButton}
+          onClick={loadServices}
+          disabled={loading}
+        >
+          {loading
+            ? "Atualizando..."
+            : "Atualizar"}
+        </button>
       </div>
 
-      <div style={toolbar}>
+      {/* ================= CARDS ================= */}
+
+      <div style={cardsGrid}>
+        <SummaryCard
+          title="Total"
+          value={resumo.total}
+        />
+
+        <SummaryCard
+          title="Pendentes"
+          value={resumo.pendentes}
+          color="#D97706"
+        />
+
+        <SummaryCard
+          title="Aceitos"
+          value={resumo.aceitos}
+          color="#2563EB"
+        />
+
+        <SummaryCard
+          title="Finalizados"
+          value={resumo.finalizados}
+          color="#15803D"
+        />
+
+        <SummaryCard
+          title="Cancelados"
+          value={resumo.cancelados}
+          color="#DC2626"
+        />
+      </div>
+
+      {/* ================= FILTROS ================= */}
+
+      <div style={filters}>
         <input
-          placeholder="Buscar por ID, cliente, prestador, categoria ou status..."
+          type="text"
+          placeholder="Buscar por cliente, prestador, categoria ou ID..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(event) =>
+            setSearch(
+              event.target.value
+            )
+          }
           style={input}
         />
 
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(event) =>
+            setStatus(
+              event.target.value
+            )
+          }
           style={select}
         >
-          <option value="abertos">Serviços em aberto</option>
-          <option value="all">Todos</option>
-          <option value="pendente">Pendente</option>
-          <option value="aceito">Aceito</option>
-          <option value="em_rota">Em rota</option>
-          <option value="pago">Pago</option>
-          <option value="finalizado">Finalizado</option>
-          <option value="cancelado">Cancelado</option>
-          <option value="expirado">Expirado</option>
+          <option value="all">
+            Todos
+          </option>
+
+          <option value="abertos">
+            Abertos
+          </option>
+
+          <option value="pendente">
+            Pendentes
+          </option>
+
+          <option value="aceito">
+            Aceitos
+          </option>
+
+          <option value="em_rota">
+            Em rota
+          </option>
+
+          <option value="pago">
+            Pagos
+          </option>
+
+          <option value="finalizado">
+            Finalizados
+          </option>
+
+          <option value="cancelado">
+            Cancelados
+          </option>
+
+          <option value="expirado">
+            Expirados
+          </option>
         </select>
-
-        <button style={refreshBtn} onClick={load}>
-          Atualizar
-        </button>
       </div>
 
-      <div style={tableWrapper}>
-        <table style={table}>
-          <thead>
-            <tr>
-              <th style={th}>ID</th>
-              <th style={th}>Tipo</th>
-              <th style={th}>Categoria</th>
-              <th style={th}>Cliente</th>
-              <th style={th}>Prestador</th>
-              <th style={th}>Valor</th>
-              <th style={th}>Status</th>
-              <th style={th}>Criado</th>
-              <th style={th}></th>
-            </tr>
-          </thead>
+      {/* ================= ERRO ================= */}
 
-          <tbody>
-            {filtered.map((service) => (
-              <tr key={service._id}>
-                <td style={td} title={service._id}>
-                  {shortId(service._id)}
-                </td>
+      {error && (
+        <div style={errorBox}>
+          {error}
+        </div>
+      )}
 
-                <td style={td}>
-                  <TypeBadge type={service.tipoServico} />
-                </td>
+      {/* ================= LOADING ================= */}
 
-                <td style={td}>{service.categoria || "-"}</td>
+      {loading ? (
+        <div style={loadingBox}>
+          Carregando serviços...
+        </div>
+      ) : (
+        <div style={tableWrapper}>
+          <div style={tableScroll}>
+            <table style={table}>
+              <thead>
+                <tr>
+                  <th style={th}>
+                    Serviço
+                  </th>
 
-                <td style={td}>
-                  {service.cliente?.name ||
-                    service.cliente?.nome ||
-                    service.clienteNome ||
-                    "-"}
-                </td>
+                  <th style={th}>
+                    Tipo
+                  </th>
 
-                <td style={td}>
-                  {service.profissional?.name ||
-                    service.profissional?.nome ||
-                    service.profissionalNome ||
-                    "-"}
-                </td>
+                  <th style={th}>
+                    Categoria
+                  </th>
 
-                <td style={td}>
-                  {money(service.valorFinal ?? service.price ?? service.valor)}
-                </td>
+                  <th style={th}>
+                    Cliente
+                  </th>
 
-                <td style={td}>
-                  <StatusBadge status={service.status} />
-                </td>
+                  <th style={th}>
+                    Prestador
+                  </th>
 
-                <td style={td}>{formatDateTime(service.createdAt)}</td>
+                  <th style={th}>
+                    Status
+                  </th>
 
-                <td style={td}>
-                  <button
-                    style={btn}
-                    onClick={() => navigate(`/orders/${service._id}`)}
-                  >
-                    Ver
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <th style={th}>
+                    Valor
+                  </th>
 
-        {filtered.length === 0 && (
-          <div style={{ padding: 20 }}>Nenhum serviço encontrado</div>
-        )}
-      </div>
-    </Page>
-  );
-}
+                  <th style={th}>
+                    Data
+                  </th>
 
-function normalizeServicesResponse(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.servicos)) return data.servicos;
-  if (Array.isArray(data?.services)) return data.services;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.result)) return data.result;
+                  <th style={th}>
+                    Ação
+                  </th>
+                </tr>
+              </thead>
 
-  return [];
-}
+              <tbody>
+                {filteredServices.map(
+                  (servico) => (
+                    <tr
+                      key={
+                        servico._id
+                      }
+                    >
+                      {/* ID */}
 
-function isOpenService(status) {
-  return ["pendente", "aceito", "em_rota", "pago"].includes(status);
-}
+                      <td style={td}>
+                        <strong>
+                          #
+                          {shortId(
+                            servico._id
+                          )}
+                        </strong>
 
-function countByStatus(list, status) {
-  return list.filter((item) => item.status === status).length;
-}
+                        {servico.urgente && (
+                          <div
+                            style={
+                              urgentText
+                            }
+                          >
+                            Urgente
+                          </div>
+                        )}
+                      </td>
 
-function countByGroup(list, group) {
-  if (group === "abertos") {
-    return list.filter((item) => isOpenService(item.status)).length;
-  }
+                      {/* TIPO */}
 
-  return 0;
-}
+                      <td style={td}>
+                        {formatType(
+                          servico.tipoServico
+                        )}
+                      </td>
 
-function SummaryCard({ label, value }) {
-  return (
-    <div style={summaryCard}>
-      <div style={summaryLabel}>{label}</div>
-      <div style={summaryValue}>{value}</div>
+                      {/* CATEGORIA */}
+
+                      <td style={td}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                          }}
+                        >
+                          {servico.categoria ||
+                            "—"}
+                        </div>
+
+                        {servico.descricao && (
+                          <div
+                            style={
+                              secondaryText
+                            }
+                          >
+                            {truncate(
+                              servico.descricao,
+                              50
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* CLIENTE */}
+
+                      <td style={td}>
+                        <PersonCell
+                          person={
+                            servico.cliente
+                          }
+                          emptyLabel="Cliente não encontrado"
+                        />
+                      </td>
+
+                      {/* PRESTADOR */}
+
+                      <td style={td}>
+                        <PersonCell
+                          person={
+                            servico.profissional
+                          }
+                          emptyLabel="Ainda não definido"
+                        />
+                      </td>
+
+                      {/* STATUS */}
+
+                      <td style={td}>
+                        <StatusBadge
+                          status={
+                            servico.status
+                          }
+                        />
+                      </td>
+
+                      {/* VALOR */}
+
+                      <td style={td}>
+                        {getServiceValue(
+                          servico
+                        )}
+                      </td>
+
+                      {/* DATA */}
+
+                      <td style={td}>
+                        {formatDate(
+                          servico.createdAt
+                        )}
+                      </td>
+
+                      {/* AÇÃO */}
+
+                      <td style={td}>
+                        <button
+                          style={
+                            detailButton
+                          }
+                          onClick={() =>
+                            navigate(
+                              `/orders/${servico._id}`
+                            )
+                          }
+                        >
+                          Ver
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredServices.length ===
+            0 && (
+            <div style={empty}>
+              Nenhum serviço encontrado.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-function StatusBadge({ status }) {
-  const map = {
-    pendente: "#F59E0B",
-    aceito: "#2563EB",
-    em_rota: "#7C3AED",
-    pago: "#0EA5E9",
-    finalizado: "#059669",
-    cancelado: "#DC2626",
-    expirado: "#6B7280",
+/* =========================================================
+   COMPONENTES
+========================================================= */
+
+function SummaryCard({
+  title,
+  value,
+  color = "#14532D",
+}) {
+  return (
+    <div style={summaryCard}>
+      <span style={summaryTitle}>
+        {title}
+      </span>
+
+      <strong
+        style={{
+          ...summaryValue,
+          color,
+        }}
+      >
+        {value ?? 0}
+      </strong>
+    </div>
+  );
+}
+
+function PersonCell({
+  person,
+  emptyLabel,
+}) {
+  if (
+    !person ||
+    typeof person !== "object"
+  ) {
+    return (
+      <span style={muted}>
+        {emptyLabel}
+      </span>
+    );
+  }
+
+  const name =
+    getPersonName(person);
+
+  const contact =
+    person.email ||
+    person.telefone ||
+    person.phone ||
+    person.celular;
+
+  return (
+    <div>
+      <div
+        style={{
+          fontWeight: 700,
+          color: "#111827",
+        }}
+      >
+        {name}
+      </div>
+
+      {contact && (
+        <div style={secondaryText}>
+          {contact}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusBadge({
+  status,
+}) {
+  const config = {
+    pendente: {
+      label: "Pendente",
+      color: "#92400E",
+      background: "#FEF3C7",
+    },
+
+    aceito: {
+      label: "Aceito",
+      color: "#1D4ED8",
+      background: "#DBEAFE",
+    },
+
+    em_rota: {
+      label: "Em rota",
+      color: "#6D28D9",
+      background: "#EDE9FE",
+    },
+
+    pago: {
+      label: "Pago",
+      color: "#047857",
+      background: "#D1FAE5",
+    },
+
+    finalizado: {
+      label: "Finalizado",
+      color: "#15803D",
+      background: "#DCFCE7",
+    },
+
+    cancelado: {
+      label: "Cancelado",
+      color: "#DC2626",
+      background: "#FEE2E2",
+    },
+
+    expirado: {
+      label: "Expirado",
+      color: "#6B7280",
+      background: "#F3F4F6",
+    },
   };
+
+  const current =
+    config[status] || {
+      label: status || "—",
+      color: "#374151",
+      background: "#F3F4F6",
+    };
 
   return (
     <span
       style={{
-        background: map[status] || "#9CA3AF",
-        color: "#fff",
-        padding: "4px 8px",
-        borderRadius: 6,
+        display:
+          "inline-block",
+        padding: "5px 9px",
+        borderRadius: 999,
         fontSize: 12,
+        fontWeight: 800,
+        color: current.color,
+        background:
+          current.background,
         whiteSpace: "nowrap",
       }}
     >
-      {statusLabel(status)}
+      {current.label}
     </span>
   );
 }
 
-function TypeBadge({ type }) {
-  const map = {
-    normal: "#2563EB",
-    agendado: "#7C3AED",
-    orcamento: "#059669",
-    emergencial: "#DC2626",
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function getPersonName(
+  person
+) {
+  if (!person) {
+    return "—";
+  }
+
+  if (
+    typeof person === "string"
+  ) {
+    return person;
+  }
+
+  return (
+    person.name ||
+    person.nome ||
+    "Nome não informado"
+  );
+}
+
+function getServiceValue(
+  servico
+) {
+  const value =
+    servico.valorFinal ??
+    servico.price;
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "—";
+  }
+
+  return Number(
+    value
+  ).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL",
+    }
+  );
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(
+    value
+  ).toLocaleString(
+    "pt-BR"
+  );
+}
+
+function formatType(type) {
+  const types = {
+    normal:
+      "Solicitação",
+
+    orcamento:
+      "Orçamento",
+
+    agendado:
+      "Agendamento",
   };
 
   return (
-    <span
-      style={{
-        background: map[type] || "#6B7280",
-        color: "#fff",
-        padding: "4px 8px",
-        borderRadius: 6,
-        fontSize: 12,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {typeLabel(type)}
-    </span>
+    types[type] ||
+    type ||
+    "—"
   );
-}
-
-function statusLabel(status) {
-  const map = {
-    pendente: "Pendente",
-    aceito: "Aceito",
-    em_rota: "Em rota",
-    pago: "Pago",
-    finalizado: "Finalizado",
-    cancelado: "Cancelado",
-    expirado: "Expirado",
-  };
-
-  return map[status] || status || "-";
-}
-
-function typeLabel(type) {
-  const map = {
-    normal: "Normal",
-    agendado: "Agendado",
-    orcamento: "Orçamento",
-    emergencial: "Emergencial",
-  };
-
-  return map[type] || type || "Serviço";
 }
 
 function shortId(id) {
-  if (!id) return "-";
+  if (!id) {
+    return "—";
+  }
+
   return String(id).slice(-8);
 }
 
-function money(value) {
-  if (value === null || value === undefined || value === "") return "-";
+function truncate(
+  value,
+  max
+) {
+  if (!value) {
+    return "";
+  }
 
-  const number = Number(value);
+  const text =
+    String(value);
 
-  if (!Number.isFinite(number)) return "-";
+  if (
+    text.length <= max
+  ) {
+    return text;
+  }
 
-  return number.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
+  return `${text.slice(
+    0,
+    max
+  )}...`;
 }
 
-function formatDateTime(date) {
-  if (!date) return "-";
+/* =========================================================
+   STYLES
+========================================================= */
 
-  const parsed = new Date(date);
+const page = {
+  minHeight: "100vh",
+  padding: 24,
+  background: "#F9FAFB",
+  color: "#111827",
+};
 
-  if (Number.isNaN(parsed.getTime())) return "-";
+const header = {
+  display: "flex",
+  justifyContent:
+    "space-between",
+  alignItems: "center",
+  gap: 16,
+  marginBottom: 24,
+};
 
-  return parsed.toLocaleString("pt-BR");
-}
+const title = {
+  margin: 0,
+  fontSize: 26,
+  fontWeight: 900,
+  color: "#14532D",
+};
 
-const summaryGrid = {
+const subtitle = {
+  marginTop: 6,
+  marginBottom: 0,
+  color: "#64748B",
+};
+
+const cardsGrid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-  gap: 12,
-  marginBottom: 16,
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(160px, 1fr))",
+  gap: 14,
+  marginBottom: 20,
 };
 
 const summaryCard = {
-  background: "#fff",
-  border: "1px solid #E5E7EB",
-  borderRadius: 12,
-  padding: 14,
+  padding: 18,
+  background: "#FFFFFF",
+  border:
+    "1px solid #E5E7EB",
+  borderRadius: 14,
 };
 
-const summaryLabel = {
-  fontSize: 12,
-  color: "#6B7280",
+const summaryTitle = {
+  display: "block",
+  color: "#64748B",
+  fontSize: 13,
+  fontWeight: 700,
   marginBottom: 6,
 };
 
 const summaryValue = {
-  fontSize: 22,
+  fontSize: 26,
   fontWeight: 900,
-  color: "#111827",
 };
 
-const toolbar = {
+const filters = {
   display: "flex",
   gap: 12,
-  marginBottom: 16,
   flexWrap: "wrap",
+  marginBottom: 20,
 };
 
 const input = {
-  padding: 8,
-  border: "1px solid #E5E7EB",
-  borderRadius: 8,
-  minWidth: 320,
+  flex: "1 1 320px",
+  minWidth: 240,
+  padding: "11px 13px",
+  borderRadius: 10,
+  border:
+    "1px solid #D1D5DB",
+  outline: "none",
+  fontSize: 14,
+  background: "#FFFFFF",
 };
 
 const select = {
-  padding: 8,
-  borderRadius: 8,
-  border: "1px solid #E5E7EB",
+  padding: "11px 13px",
+  borderRadius: 10,
+  border:
+    "1px solid #D1D5DB",
+  background: "#FFFFFF",
+  fontSize: 14,
 };
 
-const refreshBtn = {
-  background: "#14532D",
-  color: "#fff",
+const refreshButton = {
   border: "none",
-  padding: "8px 14px",
-  borderRadius: 8,
+  borderRadius: 10,
+  padding: "10px 16px",
+  background: "#2E7D32",
+  color: "#FFFFFF",
+  fontWeight: 800,
   cursor: "pointer",
-  fontWeight: 700,
 };
 
 const tableWrapper = {
-  background: "#fff",
-  borderRadius: 12,
-  border: "1px solid #E5E7EB",
+  background: "#FFFFFF",
+  border:
+    "1px solid #E5E7EB",
+  borderRadius: 14,
+  overflow: "hidden",
+};
+
+const tableScroll = {
   overflowX: "auto",
 };
 
 const table = {
   width: "100%",
-  borderCollapse: "collapse",
+  minWidth: 1200,
+  borderCollapse:
+    "collapse",
 };
 
 const th = {
   padding: 12,
   textAlign: "left",
-  background: "#F9FAFB",
+  background: "#F3F4F6",
+  color: "#374151",
+  fontSize: 12,
+  fontWeight: 800,
   whiteSpace: "nowrap",
 };
 
 const td = {
   padding: 12,
-  borderTop: "1px solid #E5E7EB",
+  borderTop:
+    "1px solid #E5E7EB",
+  fontSize: 13,
   verticalAlign: "middle",
 };
 
-const btn = {
-  background: "#14532D",
-  color: "#fff",
+const secondaryText = {
+  marginTop: 3,
+  color: "#64748B",
+  fontSize: 11,
+};
+
+const urgentText = {
+  marginTop: 4,
+  color: "#DC2626",
+  fontSize: 11,
+  fontWeight: 800,
+};
+
+const muted = {
+  color: "#94A3B8",
+};
+
+const detailButton = {
   border: "none",
-  padding: "6px 12px",
   borderRadius: 8,
+  padding: "7px 12px",
+  background: "#14532D",
+  color: "#FFFFFF",
+  fontWeight: 700,
   cursor: "pointer",
+};
+
+const errorBox = {
+  padding: 16,
+  marginBottom: 20,
+  borderRadius: 12,
+  color: "#DC2626",
+  background: "#FEF2F2",
+  border:
+    "1px solid #FECACA",
+};
+
+const loadingBox = {
+  padding: 30,
+  textAlign: "center",
+  color: "#64748B",
+};
+
+const empty = {
+  padding: 30,
+  textAlign: "center",
+  color: "#64748B",
 };
