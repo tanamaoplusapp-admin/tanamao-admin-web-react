@@ -9,9 +9,10 @@ export default function Users() {
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [cityFilter, setCityFilter] = useState("all");
+ const [cityFilter, setCityFilter] = useState("all");
+const [citiesExpanded, setCitiesExpanded] = useState(false);
 
-  const navigate = useNavigate();
+const navigate = useNavigate();
 
   useEffect(() => {
     load();
@@ -46,49 +47,56 @@ export default function Users() {
     }
   }
 
-  /* =========================================================
-     CIDADES REAIS CADASTRADAS
-  ========================================================= */
+/* =========================================================
+   CIDADES REAIS CADASTRADAS
+========================================================= */
 
-  const cities = useMemo(() => {
-    const map = new Map();
+const cities = useMemo(() => {
+  const map = new Map();
 
-    users.forEach((user) => {
-      const city = getUserCity(user);
-      const state = getUserState(user);
+  users.forEach((user) => {
+    const city = getUserCity(user);
+    const state = getUserState(user);
 
-      if (!city || city === "Não informada") {
-        return;
-      }
+    if (!city || city === "Não informada") {
+      return;
+    }
 
-      const key = normalizeText(
-        `${city}-${state || ""}`
-      );
+    const normalizedCity = normalizeCity(city);
+    const normalizedState = normalizeState(state);
 
-      if (!map.has(key)) {
-        map.set(key, {
-          city,
-          state,
-          count: 0,
-        });
-      }
+    if (!normalizedCity) {
+      return;
+    }
 
-      map.get(key).count += 1;
-    });
+    const key = `${normalizedCity}-${normalizedState}`;
 
-    return Array.from(map.entries())
-      .map(([key, data]) => ({
+    if (!map.has(key)) {
+      map.set(key, {
         key,
-        ...data,
-      }))
-      .sort((a, b) =>
-        a.city.localeCompare(
-          b.city,
-          "pt-BR"
-        )
-      );
-  }, [users]);
+        city: formatCityName(city),
+        state: normalizedState
+          ? formatStateName(state)
+          : "",
+        count: 0,
+      });
+    }
 
+    map.get(key).count += 1;
+  });
+
+  return Array.from(map.values())
+    .sort((a, b) => {
+      if (b.count !== a.count) {
+        return b.count - a.count;
+      }
+
+      return a.city.localeCompare(
+        b.city,
+        "pt-BR"
+      );
+    });
+}, [users]);
   /* =========================================================
      FILTROS
   ========================================================= */
@@ -127,14 +135,12 @@ export default function Users() {
           return true;
         }
 
-        const city = getUserCity(u);
-        const state = getUserState(u);
+      const city = getUserCity(u);
+const state = getUserState(u);
 
-        const key = normalizeText(
-          `${city}-${state || ""}`
-        );
+const key = `${normalizeCity(city)}-${normalizeState(state)}`;
 
-        return key === cityFilter;
+return key === cityFilter;
       })
 
       .filter((u) => {
@@ -167,30 +173,41 @@ export default function Users() {
     search,
   ]);
 
-  /* =========================================================
-     KPIs
-  ========================================================= */
+/* =========================================================
+   KPIs
+========================================================= */
 
-  const total = users.length;
+const total = users.length;
 
-  const active = users.filter(
-    (u) => u.status !== "blocked"
-  ).length;
+const active = users.filter(
+  (u) => u.status !== "blocked"
+).length;
 
-  const blocked = users.filter(
-    (u) => u.status === "blocked"
-  ).length;
+const inactive = users.filter(
+  (u) => u.status === "blocked"
+).length;
 
-  const prestadores = users.filter(
-    (u) =>
-      u.role === "profissional" ||
-      u.temPerfilProfissional === true
-  ).length;
+const prestadores = users.filter(
+  (u) =>
+    u.role === "profissional" ||
+    u.temPerfilProfissional === true
+).length;
 
-  const clientes = users.filter(
-    (u) => u.role === "cliente"
-  ).length;
+const clientes = users.filter(
+  (u) => u.role === "cliente"
+).length;
 
+const clientesPrestadores = users.filter(
+  (u) =>
+    u.role === "cliente" &&
+    u.temPerfilProfissional === true
+).length;
+
+const totalCities = cities.length;
+
+const topCity = cities.length > 0
+  ? cities[0]
+  : null;
   /* =========================================================
      LOADING
   ========================================================= */
@@ -210,111 +227,151 @@ export default function Users() {
     >
       {/* ================= KPIs ================= */}
 
-      <div style={kpiGrid}>
-        <KPI
-          title="Total"
-          value={total}
-          active={filter === "all"}
-          onClick={() =>
-            setFilter("all")
-          }
-        />
+    <div style={kpiGrid}>
+  <KPI
+    title="Total de usuários"
+    value={total}
+    active={filter === "all"}
+    onClick={() =>
+      setFilter("all")
+    }
+  />
 
-        <KPI
-          title="Ativos"
-          value={active}
-          color="#16A34A"
-          active={filter === "active"}
-          onClick={() =>
-            setFilter("active")
-          }
-        />
+  <KPI
+    title="Ativos"
+    value={active}
+    color="#16A34A"
+    active={filter === "active"}
+    onClick={() =>
+      setFilter("active")
+    }
+  />
 
-        <KPI
-          title="Bloqueados"
-          value={blocked}
-          color="#DC2626"
-          active={filter === "blocked"}
-          onClick={() =>
-            setFilter("blocked")
-          }
-        />
+  <KPI
+    title="Inativos"
+    value={inactive}
+    color="#DC2626"
+    active={filter === "blocked"}
+    onClick={() =>
+      setFilter("blocked")
+    }
+  />
 
-        <KPI
-          title="Prestadores"
-          value={prestadores}
-          active={filter === "prestador"}
-          onClick={() =>
-            setFilter("prestador")
-          }
-        />
+  <KPI
+    title="Clientes"
+    value={clientes}
+    active={filter === "cliente"}
+    onClick={() =>
+      setFilter("cliente")
+    }
+  />
 
-        <KPI
-          title="Clientes"
-          value={clientes}
-          active={filter === "cliente"}
-          onClick={() =>
-            setFilter("cliente")
-          }
-        />
-      </div>
+  <KPI
+    title="Prestadores"
+    value={prestadores}
+    active={filter === "prestador"}
+    onClick={() =>
+      setFilter("prestador")
+    }
+  />
+
+  <KPI
+    title="Cliente + Prestador"
+    value={clientesPrestadores}
+  />
+
+  <KPI
+    title="Cidades"
+    value={totalCities}
+  />
+
+  <KPI
+    title="Maior concentração"
+    value={
+      topCity
+        ? `${topCity.city} (${topCity.count})`
+        : "—"
+    }
+  />
+</div>
 
       {/* ================= RESUMO POR CIDADE ================= */}
 
-      <div style={citySection}>
-        <div style={cityHeader}>
-          <div>
-            <h3 style={cityTitle}>
-              Usuários por cidade
-            </h3>
+  {/* ================= RESUMO POR CIDADE ================= */}
 
-            <div style={citySubtitle}>
-              Clique em uma cidade para filtrar a lista
-            </div>
-          </div>
+<div style={citySection}>
+  <div style={cityHeader}>
+    <div>
+      <h3 style={cityTitle}>
+        Usuários por cidade
+      </h3>
 
-          {cityFilter !== "all" && (
-            <button
-              style={clearCityButton}
-              onClick={() =>
-                setCityFilter("all")
-              }
-            >
-              Limpar filtro
-            </button>
-          )}
-        </div>
-
-        <div style={cityCards}>
-          <CityCard
-            city="Todas as cidades"
-            count={total}
-            active={cityFilter === "all"}
-            onClick={() =>
-              setCityFilter("all")
-            }
-          />
-
-          {cities.map((item) => (
-            <CityCard
-              key={item.key}
-              city={
-                item.state
-                  ? `${item.city} - ${item.state}`
-                  : item.city
-              }
-              count={item.count}
-              active={
-                cityFilter === item.key
-              }
-              onClick={() =>
-                setCityFilter(item.key)
-              }
-            />
-          ))}
-        </div>
+      <div style={citySubtitle}>
+        {totalCities} cidades cadastradas
+        {topCity
+          ? ` • Maior concentração: ${topCity.city} (${topCity.count})`
+          : ""}
       </div>
+    </div>
 
+    <div style={cityHeaderActions}>
+      {cityFilter !== "all" && (
+        <button
+          style={clearCityButton}
+          onClick={() =>
+            setCityFilter("all")
+          }
+        >
+          Limpar filtro
+        </button>
+      )}
+
+      <button
+        style={expandCityButton}
+        onClick={() =>
+          setCitiesExpanded(
+            (value) => !value
+          )
+        }
+      >
+        {citiesExpanded
+          ? "⌃ Recolher"
+          : "⌄ Ver cidades"}
+      </button>
+    </div>
+  </div>
+
+  {citiesExpanded && (
+    <div style={cityCards}>
+      <CityCard
+        city="Todas as cidades"
+        count={total}
+        active={cityFilter === "all"}
+        onClick={() =>
+          setCityFilter("all")
+        }
+      />
+
+      {cities.map((item) => (
+        <CityCard
+          key={item.key}
+          city={
+            item.state
+              ? `${item.city} - ${item.state}`
+              : item.city
+          }
+          count={item.count}
+          active={
+            cityFilter === item.key
+          }
+          onClick={() =>
+            setCityFilter(item.key)
+          }
+        />
+      ))}
+    </div>
+  )}
+</div>
       {/* ================= LISTA ================= */}
 
       <div style={card}>
@@ -559,8 +616,54 @@ function normalizeText(value) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\/\\_-]+/g, " ")
+    .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+}
+
+function normalizeCity(value) {
+  let city = normalizeText(value);
+
+  // Remove estado quando vier junto da cidade
+  city = city
+    .replace(/\s*[-/]\s*[a-z]{2}\s*$/i, "")
+    .replace(/\s*,\s*[a-z]{2}\s*$/i, "")
+    .trim();
+
+  return city;
+}
+
+function normalizeState(value) {
+  return normalizeText(value)
+    .replace(/[^a-z]/g, "")
+    .slice(0, 2);
+}
+
+function formatCityName(value) {
+  const normalized = normalizeCity(value);
+
+  if (!normalized) {
+    return "Não informada";
+  }
+
+  return normalized
+    .split(" ")
+    .map((word) => {
+      if (!word) return "";
+
+      return (
+        word.charAt(0).toUpperCase() +
+        word.slice(1)
+      );
+    })
+    .join(" ");
+}
+
+function formatStateName(value) {
+  const state = normalizeState(value);
+
+  return state.toUpperCase();
 }
 
 function formatRole(user) {
@@ -825,7 +928,22 @@ const cityHeader = {
   gap: 12,
   marginBottom: 16,
 };
+const cityHeaderActions = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  flexWrap: "wrap",
+};
 
+const expandCityButton = {
+  border: "none",
+  background: "#14532D",
+  color: "#FFFFFF",
+  padding: "8px 14px",
+  borderRadius: 8,
+  cursor: "pointer",
+  fontWeight: 700,
+};
 const cityTitle = {
   margin: 0,
   color: "#14532D",
