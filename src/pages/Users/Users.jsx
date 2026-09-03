@@ -43,7 +43,6 @@ const COLORS = {
   yellowSoft: "#FFF7E6",
 
   surface: "#FFFFFF",
-
   background: "#EEF3EE",
 
   text: "#182018",
@@ -55,6 +54,28 @@ const COLORS = {
 };
 
 /* =========================================================
+   DADOS VAZIOS DA CENTRAL
+========================================================= */
+
+const EMPTY_CENTRAL = {
+  marketplace: {
+    prestadoresAtivos: 0,
+  },
+
+  users: {
+    total: 0,
+    clientes: 0,
+    prestadores: 0,
+    motoristas: 0,
+    bloqueados: 0,
+  },
+
+  extras: {
+    empresasTotal: 0,
+  },
+};
+
+/* =========================================================
    COMPONENTE
 ========================================================= */
 
@@ -62,29 +83,34 @@ export default function Users() {
   const navigate =
     useNavigate();
 
+  /* =======================================================
+     LISTA DE USUÁRIOS
+  ======================================================= */
+
   const [
     users,
     setUsers,
   ] = useState([]);
 
-  /*
-   * NÚMEROS OFICIAIS DA CENTRAL.
-   *
-   * Esses dados vêm da mesma chamada usada
-   * pela dashboard principal.
-   *
-   * Isso corrige o problema em que "Ativos"
-   * repetia o total de usuários.
-   */
-  const [
-    centralUsers,
-    setCentralUsers,
-  ] = useState({
-    total: 0,
-    bloqueados: 0,
+  /* =======================================================
+     NÚMEROS OFICIAIS DA DASHBOARD
+  ======================================================= */
 
-    loaded: false,
-  });
+  const [
+    central,
+    setCentral,
+  ] = useState(
+    EMPTY_CENTRAL
+  );
+
+  const [
+    centralLoaded,
+    setCentralLoaded,
+  ] = useState(false);
+
+  /* =======================================================
+     ESTADOS
+  ======================================================= */
 
   const [
     loading,
@@ -100,6 +126,10 @@ export default function Users() {
     lastUpdated,
     setLastUpdated,
   ] = useState(null);
+
+  /* =======================================================
+     FILTROS
+  ======================================================= */
 
   const [
     search,
@@ -124,14 +154,15 @@ export default function Users() {
   /* =========================================================
      CARREGAR DADOS
 
-     MANTÉM:
-     getUsers()
+     getUsers:
+       usado para a LISTA
 
-     ADICIONA:
-     getCentralDashboard()
+     getCentralDashboard:
+       usado para os KPIs oficiais
 
-     para utilizar exatamente os números
-     oficiais da Central.
+     IMPORTANTE:
+       Prestadores ativos vem de:
+       marketplace.prestadoresAtivos
   ========================================================= */
 
   const load =
@@ -140,13 +171,6 @@ export default function Users() {
         setLoading(true);
         setError("");
 
-        /*
-         * Carregamos lista e dashboard em paralelo.
-         *
-         * Promise.allSettled impede que uma falha
-         * da Central apague uma lista de usuários
-         * que tenha sido carregada corretamente.
-         */
         const [
           usersResult,
           dashboardResult,
@@ -157,7 +181,7 @@ export default function Users() {
           ]);
 
         /* =========================================
-           LISTA DE USUÁRIOS
+           LISTA
         ========================================= */
 
         if (
@@ -185,7 +209,7 @@ export default function Users() {
           );
         } else {
           console.error(
-            "[Users] Erro ao carregar usuários:",
+            "[Users] Erro ao carregar lista:",
             usersResult.reason
           );
 
@@ -197,7 +221,7 @@ export default function Users() {
         }
 
         /* =========================================
-           NÚMEROS OFICIAIS DA CENTRAL
+           DASHBOARD / KPIs
         ========================================= */
 
         if (
@@ -207,87 +231,87 @@ export default function Users() {
           const response =
             dashboardResult.value;
 
-          /*
-           * Mesma tolerância usada na Dashboard:
-           *
-           * response
-           * response.data
-           * response.data.data
-           */
-          const dashboardData =
+          const data =
             response?.data?.data ??
             response?.data ??
             response ??
             {};
 
-          const totalRaw =
-            Number(
-              dashboardData
-                ?.users
-                ?.total ??
-                0
-            );
+          setCentral({
+            marketplace: {
+              prestadoresAtivos:
+                toNumber(
+                  data?.marketplace
+                    ?.prestadoresAtivos ??
+                    data?.marketplace
+                      ?.activeProviders
+                ),
+            },
 
-          const bloqueadosRaw =
-            Number(
-              dashboardData
-                ?.users
-                ?.bloqueados ??
-                dashboardData
-                  ?.users
-                  ?.blocked ??
-                0
-            );
+            users: {
+              total:
+                toNumber(
+                  data?.users?.total
+                ),
 
-          const total =
-            Number.isFinite(
-              totalRaw
-            )
-              ? Math.max(
-                  0,
-                  totalRaw
-                )
-              : 0;
+              clientes:
+                toNumber(
+                  data?.users
+                    ?.clientes ??
+                    data?.users
+                      ?.clients
+                ),
 
-          const bloqueados =
-            Number.isFinite(
-              bloqueadosRaw
-            )
-              ? Math.max(
-                  0,
-                  bloqueadosRaw
-                )
-              : 0;
+              prestadores:
+                toNumber(
+                  data?.users
+                    ?.prestadores ??
+                    data?.users
+                      ?.providers
+                ),
 
-          setCentralUsers({
-            total,
+              motoristas:
+                toNumber(
+                  data?.users
+                    ?.motoristas ??
+                    data?.users
+                      ?.drivers
+                ),
 
-            bloqueados:
-              Math.min(
-                bloqueados,
-                total || bloqueados
-              ),
+              bloqueados:
+                toNumber(
+                  data?.users
+                    ?.bloqueados ??
+                    data?.users
+                      ?.blocked
+                ),
+            },
 
-            loaded: true,
+            extras: {
+              empresasTotal:
+                toNumber(
+                  data?.extras
+                    ?.empresasTotal
+                ),
+            },
           });
+
+          setCentralLoaded(
+            true
+          );
         } else {
           console.error(
-            "[Users] Erro ao carregar números da Central:",
+            "[Users] Erro ao carregar Central:",
             dashboardResult.reason
           );
 
-          /*
-           * Não inventamos números oficiais
-           * caso a dashboard falhe.
-           *
-           * A tela ainda consegue mostrar
-           * a lista normalmente.
-           */
-          setCentralUsers({
-            total: 0,
-            bloqueados: 0,
-            loaded: false,
-          });
+          setCentral(
+            EMPTY_CENTRAL
+          );
+
+          setCentralLoaded(
+            false
+          );
 
           setError(
             (current) =>
@@ -307,11 +331,13 @@ export default function Users() {
 
         setUsers([]);
 
-        setCentralUsers({
-          total: 0,
-          bloqueados: 0,
-          loaded: false,
-        });
+        setCentral(
+          EMPTY_CENTRAL
+        );
+
+        setCentralLoaded(
+          false
+        );
 
         setError(
           "Não foi possível carregar os usuários."
@@ -326,7 +352,7 @@ export default function Users() {
   }, [load]);
 
   /* =========================================================
-     CIDADES REAIS CADASTRADAS
+     CIDADES
   ========================================================= */
 
   const cities =
@@ -427,7 +453,13 @@ export default function Users() {
     }, [users]);
 
   /* =========================================================
-     FILTROS
+     FILTRAGEM DA LISTA
+
+     IMPORTANTE:
+     "prestadoresAtivos" da Central é um KPI agregado.
+
+     Não tentamos recriar esse número pela lista,
+     porque foi justamente isso que causou a diferença.
   ========================================================= */
 
   const filteredUsers =
@@ -439,7 +471,7 @@ export default function Users() {
 
       return users
 
-        /* PERFIL / STATUS */
+        /* PERFIL */
 
         .filter(
           (user) => {
@@ -454,11 +486,8 @@ export default function Users() {
               filter ===
               "prestador"
             ) {
-              return (
-                user?.role ===
-                  "profissional" ||
-                user?.temPerfilProfissional ===
-                  true
+              return hasProfessionalProfile(
+                user
               );
             }
 
@@ -477,15 +506,6 @@ export default function Users() {
               "blocked"
             ) {
               return isBlockedUser(
-                user
-              );
-            }
-
-            if (
-              filter ===
-              "active"
-            ) {
-              return !isBlockedUser(
                 user
               );
             }
@@ -576,65 +596,105 @@ export default function Users() {
     ]);
 
   /* =========================================================
-     KPIs
-
-     CORREÇÃO PRINCIPAL:
-
-     Antes:
-       active = users.filter(status !== blocked)
-
-     Agora:
-       active = total oficial - bloqueados oficiais
-
-     exatamente com os dados da Central.
+     NÚMEROS DA LISTA - FALLBACK
   ========================================================= */
 
   const listTotal =
     users.length;
 
-  const total =
-    centralUsers.loaded
-      ? centralUsers.total
-      : listTotal;
-
-  const inactive =
-    centralUsers.loaded
-      ? centralUsers.bloqueados
-      : users.filter(
-          (user) =>
-            isBlockedUser(
-              user
-            )
-        ).length;
-
-  const active =
-    Math.max(
-      0,
-      total -
-        inactive
-    );
-
-  /*
-   * Os demais perfis continuam vindo da
-   * própria lista porque são usados também
-   * para filtros individuais.
-   */
-
-  const prestadores =
-    users.filter(
-      (user) =>
-        user?.role ===
-          "profissional" ||
-        user?.temPerfilProfissional ===
-          true
-    ).length;
-
-  const clientes =
+  const listClientes =
     users.filter(
       (user) =>
         user?.role ===
         "cliente"
     ).length;
+
+  const listPrestadores =
+    users.filter(
+      (user) =>
+        hasProfessionalProfile(
+          user
+        )
+    ).length;
+
+  const listMotoristas =
+    users.filter(
+      (user) =>
+        user?.role ===
+        "motorista"
+    ).length;
+
+  const listBloqueados =
+    users.filter(
+      (user) =>
+        isBlockedUser(
+          user
+        )
+    ).length;
+
+  const listEmpresas =
+    users.filter(
+      (user) =>
+        user?.role ===
+        "empresa"
+    ).length;
+
+  /* =========================================================
+     KPIs OFICIAIS
+
+     ESSA É A CORREÇÃO:
+
+     prestadoresAtivos =
+       central.marketplace.prestadoresAtivos
+
+     exatamente como na Dashboard.
+  ========================================================= */
+
+  const total =
+    centralLoaded
+      ? central.users.total
+      : listTotal;
+
+  const prestadoresAtivos =
+    centralLoaded
+      ? central.marketplace
+          .prestadoresAtivos
+      : 0;
+
+  const clientes =
+    centralLoaded
+      ? central.users.clientes
+      : listClientes;
+
+  const prestadores =
+    centralLoaded
+      ? central.users.prestadores
+      : listPrestadores;
+
+  const motoristas =
+    centralLoaded
+      ? central.users.motoristas
+      : listMotoristas;
+
+  const bloqueados =
+    centralLoaded
+      ? central.users.bloqueados
+      : listBloqueados;
+
+  const empresas =
+    centralLoaded &&
+    central.extras
+      .empresasTotal > 0
+      ? central.extras
+          .empresasTotal
+      : listEmpresas;
+
+  /* =========================================================
+     CLIENTE + PRESTADOR
+
+     Não existe este número no dashboard original,
+     então continua vindo da lista.
+  ========================================================= */
 
   const clientesPrestadores =
     users.filter(
@@ -645,19 +705,9 @@ export default function Users() {
           true
     ).length;
 
-  const motoristas =
-    users.filter(
-      (user) =>
-        user?.role ===
-        "motorista"
-    ).length;
-
-  const empresas =
-    users.filter(
-      (user) =>
-        user?.role ===
-        "empresa"
-    ).length;
+  /* =========================================================
+     CIDADES
+  ========================================================= */
 
   const totalCities =
     cities.length;
@@ -667,12 +717,26 @@ export default function Users() {
       ? cities[0]
       : null;
 
-  const activePercent =
-    total > 0
-      ? (
-          (active /
-            total) *
-          100
+  /* =========================================================
+     PERCENTUAL DE PRESTADORES ATIVOS
+
+     Agora não chamamos mais isso de
+     "% da base de usuários".
+
+     É:
+     prestadores ativos /
+     prestadores cadastrados.
+  ========================================================= */
+
+  const providerActivePercent =
+    prestadores > 0
+      ? Math.min(
+          100,
+          (
+            (prestadoresAtivos /
+              prestadores) *
+            100
+          )
         ).toFixed(1)
       : "0.0";
 
@@ -743,8 +807,8 @@ export default function Users() {
               styles.loadingText
             }
           >
-            Organizando a base
-            da plataforma...
+            Organizando a base da
+            plataforma...
           </div>
         </div>
       </Page>
@@ -811,8 +875,8 @@ export default function Users() {
                 Consulte perfis,
                 acompanhe cidades,
                 encontre usuários e
-                monitore a situação
-                da base.
+                monitore a operação dos
+                prestadores.
               </div>
             </div>
 
@@ -874,7 +938,7 @@ export default function Users() {
               : "Dados carregados"}
           </div>
 
-          {/* KPIS PRINCIPAIS DO HERO */}
+          {/* KPIS DO HERO */}
 
           <div
             className="users-hero-stats"
@@ -890,22 +954,23 @@ export default function Users() {
             />
 
             <HeroStat
-              label="Ativos"
+              label="Prestadores ativos"
               value={
-                active
+                prestadoresAtivos
               }
             />
 
             <HeroStat
-              label="Bloqueados"
+              label="Clientes"
               value={
-                inactive
+                clientes
               }
             />
 
             <HeroStat
-              label="Base ativa"
-              value={`${activePercent}%`}
+              label="Prestadores ativos"
+              value={`${providerActivePercent}%`}
+              helper="dos prestadores cadastrados"
             />
           </div>
         </div>
@@ -974,7 +1039,7 @@ export default function Users() {
         <SectionHeading
           eyebrow="VISÃO GERAL"
           title="Resumo da base"
-          description="Os totais de usuários ativos e bloqueados usam os mesmos números oficiais da Central."
+          description="Prestadores ativos utiliza exatamente o mesmo indicador da Dashboard Central."
         />
 
         <div
@@ -1001,24 +1066,29 @@ export default function Users() {
             iconBackground={
               COLORS.greenSoft
             }
-            onClick={() => {
+            onClick={() =>
               setFilter(
                 "all"
-              );
-            }}
+              )
+            }
           />
 
-          {/* ATIVOS - CORRIGIDO */}
+          {/* ===============================================
+              PRESTADORES ATIVOS
+
+              MESMO VALOR DA DASHBOARD:
+              marketplace.prestadoresAtivos
+
+              Não possui filtro individual porque
+              getUsers() não necessariamente informa
+              o mesmo critério usado pelo backend.
+          =============================================== */}
 
           <KPI
             icon="✓"
-            title="Ativos"
+            title="Prestadores ativos"
             value={
-              active
-            }
-            active={
-              filter ===
-              "active"
+              prestadoresAtivos
             }
             color={
               COLORS.green
@@ -1026,20 +1096,16 @@ export default function Users() {
             iconBackground={
               COLORS.greenSoft
             }
-            onClick={() =>
-              setFilter(
-                "active"
-              )
-            }
+            subtitle="Mesmo indicador da Dashboard"
           />
 
-          {/* BLOQUEADOS - OFICIAL */}
+          {/* BLOQUEADOS */}
 
           <KPI
             icon="!"
             title="Bloqueados"
             value={
-              inactive
+              bloqueados
             }
             active={
               filter ===
@@ -1083,11 +1149,11 @@ export default function Users() {
             }
           />
 
-          {/* PRESTADORES */}
+          {/* PRESTADORES CADASTRADOS */}
 
           <KPI
             icon="🧑‍🔧"
-            title="Prestadores"
+            title="Prestadores cadastrados"
             value={
               prestadores
             }
@@ -1251,7 +1317,7 @@ export default function Users() {
             </div>
           </div>
 
-          {/* CIDADES ABERTAS */}
+          {/* CIDADES EXPANDIDAS */}
 
           {citiesExpanded ? (
             <div
@@ -1303,6 +1369,8 @@ export default function Users() {
               )}
             </div>
           ) : (
+            /* PREVIEW */
+
             <div
               style={
                 styles.cityPreview
@@ -1472,16 +1540,18 @@ export default function Users() {
                         }
                       >
                         {item.city}
+
                         {item.state
                           ? ` - ${item.state}`
                           : ""}{" "}
+
                         ({item.count})
                       </option>
                     )
                   )}
                 </select>
 
-                {/* PERFIL / STATUS */}
+                {/* PERFIL */}
 
                 <select
                   className="users-filter-select"
@@ -1513,10 +1583,6 @@ export default function Users() {
                     Clientes
                   </option>
 
-                  <option value="active">
-                    Ativos
-                  </option>
-
                   <option value="blocked">
                     Bloqueados
                   </option>
@@ -1542,7 +1608,7 @@ export default function Users() {
             </div>
 
             {/* =============================================
-                RESULTADOS
+                RESULTADO
             ============================================= */}
 
             <div
@@ -1737,7 +1803,7 @@ export default function Users() {
                           >
                             {formatDate(
                               user
-                                .createdAt
+                                ?.createdAt
                             )}
                           </div>
                         </Td>
@@ -1772,7 +1838,7 @@ export default function Users() {
             </div>
 
             {/* =============================================
-                ESTADO VAZIO
+                VAZIO
             ============================================= */}
 
             {filteredUsers.length ===
@@ -1828,7 +1894,7 @@ export default function Users() {
         </section>
 
         {/* =================================================
-            RODAPÉ
+            FOOTER
         ================================================= */}
 
         <div
@@ -1875,6 +1941,7 @@ export default function Users() {
 function HeroStat({
   label,
   value,
+  helper,
 }) {
   return (
     <div
@@ -1902,6 +1969,16 @@ function HeroStat({
             )
           : value}
       </div>
+
+      {helper ? (
+        <div
+          style={
+            styles.heroStatHelper
+          }
+        >
+          {helper}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1964,6 +2041,7 @@ function KPI({
   icon,
   title,
   value,
+  subtitle,
   color =
     COLORS.greenDark,
   iconBackground =
@@ -2056,6 +2134,16 @@ function KPI({
             )
           : value}
       </div>
+
+      {subtitle ? (
+        <div
+          style={
+            styles.kpiSubtitle
+          }
+        >
+          {subtitle}
+        </div>
+      ) : null}
 
       {onClick ? (
         <div
@@ -2221,7 +2309,7 @@ function UserIdentity({
 }
 
 /* =========================================================
-   TIPO DE PERFIL
+   PERFIL
 ========================================================= */
 
 function RoleBadge({
@@ -2297,6 +2385,7 @@ function RoleBadge({
     <span
       style={{
         ...styles.roleBadge,
+
         color,
         background,
       }}
@@ -2308,9 +2397,6 @@ function RoleBadge({
 
 /* =========================================================
    STATUS
-
-   Mais robusto que:
-   status !== "blocked"
 ========================================================= */
 
 function StatusBadge({
@@ -2356,7 +2442,7 @@ function StatusBadge({
 }
 
 /* =========================================================
-   ACESSO PROFISSIONAL
+   ACESSO
 ========================================================= */
 
 function AccessBadge({
@@ -2482,7 +2568,40 @@ function Td({
 }
 
 /* =========================================================
-   STATUS DO USUÁRIO
+   HELPERS
+========================================================= */
+
+function toNumber(
+  value,
+  fallback = 0
+) {
+  const number =
+    Number(value);
+
+  return Number.isFinite(
+    number
+  )
+    ? number
+    : fallback;
+}
+
+/* =========================================================
+   PERFIL PROFISSIONAL
+========================================================= */
+
+function hasProfessionalProfile(
+  user
+) {
+  return (
+    user?.role ===
+      "profissional" ||
+    user?.temPerfilProfissional ===
+      true
+  );
+}
+
+/* =========================================================
+   BLOQUEIO
 ========================================================= */
 
 function isBlockedUser(
@@ -2492,34 +2611,18 @@ function isBlockedUser(
     return false;
   }
 
-  /*
-   * Principal formato utilizado atualmente.
-   */
   if (
-    user.status ===
+    user?.status ===
     "blocked"
   ) {
     return true;
   }
 
-  /*
-   * FallBacks para respostas
-   * diferentes do backend.
-   */
   if (
-    user.blocked ===
+    user?.blocked ===
       true ||
-    user.isBlocked ===
+    user?.isBlocked ===
       true
-  ) {
-    return true;
-  }
-
-  if (
-    user.ativo ===
-      false ||
-    user.active ===
-      false
   ) {
     return true;
   }
@@ -2528,7 +2631,7 @@ function isBlockedUser(
 }
 
 /* =========================================================
-   LOCALIZAÇÃO
+   CIDADE
 ========================================================= */
 
 function getUserCity(
@@ -2565,8 +2668,7 @@ function normalizeText(
   value
 ) {
   return String(
-    value ||
-      ""
+    value || ""
   )
     .normalize(
       "NFD"
@@ -2666,7 +2768,7 @@ function formatStateName(
 }
 
 /* =========================================================
-   PERFIL
+   FORMATA PERFIL
 ========================================================= */
 
 function formatRole(
@@ -2707,20 +2809,16 @@ function formatRole(
 }
 
 /* =========================================================
-   ACESSO
+   ACESSO PROFISSIONAL
 ========================================================= */
 
 function getAccessState(
   user
 ) {
-  const hasProfessionalProfile =
-    user?.role ===
-      "profissional" ||
-    user?.temPerfilProfissional ===
-      true;
-
   if (
-    !hasProfessionalProfile
+    !hasProfessionalProfile(
+      user
+    )
   ) {
     return {
       type: "none",
@@ -2774,7 +2872,7 @@ function getAccessState(
 }
 
 /* =========================================================
-   DATAS
+   DATA
 ========================================================= */
 
 function formatDate(
@@ -2822,7 +2920,7 @@ function formatTime(
 }
 
 /* =========================================================
-   CSS RESPONSIVO / INTERAÇÕES
+   CSS
 ========================================================= */
 
 const GLOBAL_CSS = `
@@ -2835,13 +2933,8 @@ const GLOBAL_CSS = `
 
   .users-kpi-grid {
     display: grid;
-
     grid-template-columns:
-      repeat(
-        4,
-        minmax(0, 1fr)
-      );
-
+      repeat(4, minmax(0, 1fr));
     gap: 12px;
   }
 
@@ -2853,17 +2946,11 @@ const GLOBAL_CSS = `
   }
 
   .users-kpi:hover {
-    transform:
-      translateY(-2px);
+    transform: translateY(-2px);
 
     box-shadow:
       0 9px 24px
-      rgba(
-        31,
-        55,
-        34,
-        0.08
-      );
+      rgba(31,55,34,.08);
   }
 
   .users-city-card {
@@ -2874,17 +2961,11 @@ const GLOBAL_CSS = `
   }
 
   .users-city-card:hover {
-    transform:
-      translateY(-2px);
+    transform: translateY(-2px);
 
     box-shadow:
       0 7px 18px
-      rgba(
-        31,
-        55,
-        34,
-        0.07
-      );
+      rgba(31,55,34,.07);
   }
 
   .users-main-button,
@@ -2898,22 +2979,15 @@ const GLOBAL_CSS = `
 
   .users-main-button:hover,
   .users-detail-button:hover {
-    transform:
-      translateY(-1px);
+    transform: translateY(-1px);
 
     box-shadow:
       0 5px 14px
-      rgba(
-        46,
-        79,
-        47,
-        0.18
-      );
+      rgba(46,79,47,.18);
   }
 
   .users-secondary-button:hover {
-    transform:
-      translateY(-1px);
+    transform: translateY(-1px);
 
     background:
       #E7EEE7 !important;
@@ -2925,8 +2999,7 @@ const GLOBAL_CSS = `
   }
 
   .users-table-row:hover {
-    background:
-      #F8FAF8;
+    background: #F8FAF8;
   }
 
   .users-search-input:focus,
@@ -2938,26 +3011,14 @@ const GLOBAL_CSS = `
 
     box-shadow:
       0 0 0 3px
-      rgba(
-        46,
-        79,
-        47,
-        0.08
-      );
+      rgba(46,79,47,.08);
   }
 
   .users-refresh-icon {
-    display:
-      inline-block;
+    display: inline-block;
   }
 
-  .users-refresh-icon.loading {
-    animation:
-      usersSpin
-      800ms linear
-      infinite;
-  }
-
+  .users-refresh-icon.loading,
   .users-loading-spinner {
     animation:
       usersSpin
@@ -2972,101 +3033,70 @@ const GLOBAL_CSS = `
     }
   }
 
-  @media (
-    max-width: 1100px
-  ) {
+  @media (max-width: 1100px) {
     .users-kpi-grid {
       grid-template-columns:
-        repeat(
-          2,
-          minmax(0, 1fr)
-        );
+        repeat(2, minmax(0, 1fr));
     }
   }
 
-  @media (
-    max-width: 760px
-  ) {
+  @media (max-width: 760px) {
     .users-dashboard-shell {
-      padding:
-        14px !important;
-
-      border-radius:
-        20px !important;
+      padding: 14px !important;
+      border-radius: 20px !important;
     }
 
     .users-hero {
-      padding:
-        20px !important;
+      padding: 20px !important;
     }
 
     .users-hero-top {
-      flex-direction:
-        column;
-
-      align-items:
-        flex-start !important;
+      flex-direction: column;
+      align-items: flex-start !important;
     }
 
     .users-hero-actions {
-      width:
-        100%;
-    }
-
-    .users-kpi-grid {
-      grid-template-columns:
-        repeat(
-          2,
-          minmax(0, 1fr)
-        );
-    }
-
-    .users-toolbar {
-      align-items:
-        stretch !important;
-
-      flex-direction:
-        column;
-    }
-
-    .users-filter-group {
-      width:
-        100%;
-    }
-
-    .users-filter-select {
-      flex: 1;
-
-      min-width:
-        150px;
-    }
-
-    .users-city-header {
-      align-items:
-        flex-start !important;
-
-      flex-direction:
-        column;
-    }
-  }
-
-  @media (
-    max-width: 500px
-  ) {
-    .users-kpi-grid {
-      grid-template-columns:
-        1fr;
+      width: 100%;
     }
 
     .users-hero-stats {
       grid-template-columns:
-        1fr 1fr !important;
+        repeat(2, minmax(0,1fr)) !important;
+    }
+
+    .users-toolbar {
+      align-items: stretch !important;
+      flex-direction: column;
+    }
+
+    .users-filter-group {
+      width: 100%;
+    }
+
+    .users-filter-select {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .users-city-header {
+      align-items: flex-start !important;
+      flex-direction: column;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .users-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .users-hero-stats {
+      grid-template-columns: 1fr 1fr !important;
     }
   }
 `;
 
 /* =========================================================
-   ESTILOS
+   STYLES
 ========================================================= */
 
 const styles = {
@@ -3114,8 +3144,7 @@ const styles = {
 
     marginBottom: 14,
 
-    borderRadius:
-      "50%",
+    borderRadius: "50%",
 
     border:
       `4px solid ${COLORS.border}`,
@@ -3145,11 +3174,9 @@ const styles = {
   /* HERO */
 
   hero: {
-    position:
-      "relative",
+    position: "relative",
 
-    overflow:
-      "hidden",
+    overflow: "hidden",
 
     marginBottom: 20,
 
@@ -3161,17 +3188,15 @@ const styles = {
       "linear-gradient(135deg, #203D24 0%, #2E4F2F 58%, #3C633D 100%)",
 
     boxShadow:
-      "0 14px 36px rgba(31, 55, 34, 0.14)",
+      "0 14px 36px rgba(31,55,34,.14)",
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
   },
 
   heroTop: {
     display: "flex",
 
-    alignItems:
-      "center",
+    alignItems: "center",
 
     justifyContent:
       "space-between",
@@ -3188,8 +3213,7 @@ const styles = {
 
     letterSpacing: 1.2,
 
-    color:
-      "#BFD3C0",
+    color: "#BFD3C0",
   },
 
   heroTitle: {
@@ -3199,8 +3223,7 @@ const styles = {
 
     fontWeight: 900,
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
   },
 
   heroSubtitle: {
@@ -3212,8 +3235,7 @@ const styles = {
 
     lineHeight: 1.55,
 
-    color:
-      "#D7E4D8",
+    color: "#D7E4D8",
   },
 
   heroActions: {
@@ -3238,26 +3260,22 @@ const styles = {
 
     gap: 7,
 
-    padding:
-      "0 15px",
+    padding: "0 15px",
 
-    border:
-      "none",
+    border: "none",
 
     borderRadius: 12,
 
     background:
       COLORS.orange,
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
 
     fontSize: 12,
 
     fontWeight: 900,
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
   },
 
   syncRow: {
@@ -3272,19 +3290,16 @@ const styles = {
 
     fontSize: 11,
 
-    color:
-      "#D4E1D5",
+    color: "#D4E1D5",
   },
 
   liveDot: {
     width: 8,
     height: 8,
 
-    borderRadius:
-      "50%",
+    borderRadius: "50%",
 
-    background:
-      "#66DB84",
+    background: "#66DB84",
 
     boxShadow:
       "0 0 0 4px rgba(102,219,132,.13)",
@@ -3294,7 +3309,7 @@ const styles = {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(4, minmax(0, 1fr))",
+      "repeat(4, minmax(0,1fr))",
 
     gap: 10,
 
@@ -3302,15 +3317,17 @@ const styles = {
   },
 
   heroStat: {
+    minHeight: 76,
+
     padding: 13,
 
     borderRadius: 15,
 
     background:
-      "rgba(255,255,255,0.08)",
+      "rgba(255,255,255,.08)",
 
     border:
-      "1px solid rgba(255,255,255,0.11)",
+      "1px solid rgba(255,255,255,.11)",
 
     backdropFilter:
       "blur(10px)",
@@ -3321,8 +3338,7 @@ const styles = {
 
     fontWeight: 700,
 
-    color:
-      "#CADACA",
+    color: "#CADACA",
   },
 
   heroStatValue: {
@@ -3334,8 +3350,15 @@ const styles = {
 
     fontWeight: 900,
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
+  },
+
+  heroStatHelper: {
+    marginTop: 3,
+
+    fontSize: 8,
+
+    color: "#BFD0C0",
   },
 
   /* ERRO */
@@ -3403,8 +3426,7 @@ const styles = {
 
     fontWeight: 900,
 
-    color:
-      "#991B1B",
+    color: "#991B1B",
   },
 
   errorText: {
@@ -3412,36 +3434,31 @@ const styles = {
 
     fontSize: 11,
 
-    color:
-      "#B45353",
+    color: "#B45353",
   },
 
   errorButton: {
     height: 36,
 
-    padding:
-      "0 13px",
+    padding: "0 13px",
 
-    border:
-      "none",
+    border: "none",
 
     borderRadius: 10,
 
     background:
       COLORS.red,
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
 
     fontSize: 11,
 
     fontWeight: 800,
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
   },
 
-  /* SEÇÃO */
+  /* SEÇÕES */
 
   section: {
     marginTop: 28,
@@ -3489,7 +3506,7 @@ const styles = {
   /* KPI */
 
   kpiCard: {
-    minHeight: 150,
+    minHeight: 160,
 
     display: "flex",
 
@@ -3503,11 +3520,9 @@ const styles = {
     border:
       `1px solid ${COLORS.border}`,
 
-    textAlign:
-      "left",
+    textAlign: "left",
 
-    color:
-      "inherit",
+    color: "inherit",
 
     fontFamily:
       "inherit",
@@ -3547,8 +3562,7 @@ const styles = {
   },
 
   activeBadge: {
-    padding:
-      "5px 7px",
+    padding: "5px 7px",
 
     borderRadius: 999,
 
@@ -3588,6 +3602,19 @@ const styles = {
     letterSpacing: -0.4,
   },
 
+  kpiSubtitle: {
+    minHeight: 15,
+
+    marginTop: 4,
+
+    fontSize: 9,
+
+    lineHeight: 1.4,
+
+    color:
+      COLORS.muted,
+  },
+
   kpiFooter: {
     display: "flex",
 
@@ -3597,8 +3624,7 @@ const styles = {
     justifyContent:
       "space-between",
 
-    marginTop:
-      "auto",
+    marginTop: "auto",
 
     paddingTop: 10,
 
@@ -3635,8 +3661,7 @@ const styles = {
     alignItems:
       "center",
 
-    flexWrap:
-      "wrap",
+    flexWrap: "wrap",
 
     gap: 8,
   },
@@ -3644,8 +3669,7 @@ const styles = {
   cityExpandButton: {
     height: 38,
 
-    padding:
-      "0 14px",
+    padding: "0 14px",
 
     border: "none",
 
@@ -3654,11 +3678,9 @@ const styles = {
     background:
       COLORS.green,
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
 
     fontSize: 11,
 
@@ -3668,8 +3690,7 @@ const styles = {
   secondaryButton: {
     height: 38,
 
-    padding:
-      "0 13px",
+    padding: "0 13px",
 
     border:
       `1px solid ${COLORS.border}`,
@@ -3682,8 +3703,7 @@ const styles = {
     color:
       COLORS.green,
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
 
     fontSize: 11,
 
@@ -3709,11 +3729,9 @@ const styles = {
     border:
       `1px solid ${COLORS.border}`,
 
-    textAlign:
-      "left",
+    textAlign: "left",
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
 
     fontFamily:
       "inherit",
@@ -3747,14 +3765,12 @@ const styles = {
     justifyContent:
       "center",
 
-    borderRadius:
-      "50%",
+    borderRadius: "50%",
 
     background:
       COLORS.green,
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
 
     fontSize: 10,
 
@@ -3858,8 +3874,7 @@ const styles = {
   /* LISTA */
 
   listCard: {
-    overflow:
-      "hidden",
+    overflow: "hidden",
 
     marginTop: 12,
 
@@ -3883,8 +3898,7 @@ const styles = {
 
     gap: 12,
 
-    flexWrap:
-      "wrap",
+    flexWrap: "wrap",
 
     padding: 16,
 
@@ -3893,23 +3907,19 @@ const styles = {
   },
 
   searchWrapper: {
-    position:
-      "relative",
+    position: "relative",
 
-    flex:
-      "1 1 340px",
+    flex: "1 1 340px",
 
     minWidth: 260,
   },
 
   searchIcon: {
-    position:
-      "absolute",
+    position: "absolute",
 
     left: 12,
 
-    top:
-      "50%",
+    top: "50%",
 
     transform:
       "translateY(-50%)",
@@ -3926,8 +3936,7 @@ const styles = {
   },
 
   input: {
-    width:
-      "100%",
+    width: "100%",
 
     height: 42,
 
@@ -3942,8 +3951,7 @@ const styles = {
 
     borderRadius: 12,
 
-    background:
-      "#FAFCFA",
+    background: "#FAFCFA",
 
     color:
       COLORS.text,
@@ -3955,13 +3963,11 @@ const styles = {
   },
 
   clearSearch: {
-    position:
-      "absolute",
+    position: "absolute",
 
     right: 9,
 
-    top:
-      "50%",
+    top: "50%",
 
     transform:
       "translateY(-50%)",
@@ -3977,8 +3983,7 @@ const styles = {
     justifyContent:
       "center",
 
-    border:
-      "none",
+    border: "none",
 
     borderRadius: 8,
 
@@ -3988,8 +3993,7 @@ const styles = {
     color:
       COLORS.green,
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
 
     fontSize: 17,
   },
@@ -4002,29 +4006,25 @@ const styles = {
 
     gap: 8,
 
-    flexWrap:
-      "wrap",
+    flexWrap: "wrap",
   },
 
   select: {
     height: 42,
 
-    padding:
-      "0 11px",
+    padding: "0 11px",
 
     border:
       `1px solid ${COLORS.border}`,
 
     borderRadius: 11,
 
-    background:
-      "#FFFFFF",
+    background: "#FFFFFF",
 
     color:
       COLORS.text,
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
 
     fontSize: 11,
 
@@ -4035,8 +4035,7 @@ const styles = {
   clearFiltersButton: {
     height: 42,
 
-    padding:
-      "0 12px",
+    padding: "0 12px",
 
     border:
       `1px solid ${COLORS.border}`,
@@ -4049,8 +4048,7 @@ const styles = {
     color:
       COLORS.green,
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
 
     fontSize: 10,
 
@@ -4070,8 +4068,7 @@ const styles = {
 
     gap: 10,
 
-    padding:
-      "0 16px",
+    padding: "0 16px",
 
     background:
       "#FAFCFA",
@@ -4086,8 +4083,7 @@ const styles = {
   },
 
   filteredBadge: {
-    padding:
-      "5px 8px",
+    padding: "5px 8px",
 
     borderRadius: 999,
 
@@ -4105,13 +4101,11 @@ const styles = {
   /* TABELA */
 
   tableScroll: {
-    overflowX:
-      "auto",
+    overflowX: "auto",
   },
 
   table: {
-    width:
-      "100%",
+    width: "100%",
 
     minWidth: 960,
 
@@ -4138,8 +4132,7 @@ const styles = {
 
     letterSpacing: 0.3,
 
-    whiteSpace:
-      "nowrap",
+    whiteSpace: "nowrap",
   },
 
   td: {
@@ -4162,8 +4155,7 @@ const styles = {
 
     display: "flex",
 
-    alignItems:
-      "center",
+    alignItems: "center",
 
     gap: 10,
   },
@@ -4202,8 +4194,7 @@ const styles = {
   userName: {
     maxWidth: 210,
 
-    overflow:
-      "hidden",
+    overflow: "hidden",
 
     textOverflow:
       "ellipsis",
@@ -4222,8 +4213,7 @@ const styles = {
   email: {
     maxWidth: 220,
 
-    overflow:
-      "hidden",
+    overflow: "hidden",
 
     textOverflow:
       "ellipsis",
@@ -4250,8 +4240,7 @@ const styles = {
 
     minHeight: 27,
 
-    padding:
-      "0 9px",
+    padding: "0 9px",
 
     borderRadius: 999,
 
@@ -4259,8 +4248,7 @@ const styles = {
 
     fontWeight: 900,
 
-    whiteSpace:
-      "nowrap",
+    whiteSpace: "nowrap",
   },
 
   statusBadge: {
@@ -4274,8 +4262,7 @@ const styles = {
 
     minHeight: 27,
 
-    padding:
-      "0 9px",
+    padding: "0 9px",
 
     borderRadius: 999,
 
@@ -4283,16 +4270,14 @@ const styles = {
 
     fontWeight: 900,
 
-    whiteSpace:
-      "nowrap",
+    whiteSpace: "nowrap",
   },
 
   statusDot: {
     width: 6,
     height: 6,
 
-    borderRadius:
-      "50%",
+    borderRadius: "50%",
   },
 
   accessBadge: {
@@ -4304,8 +4289,7 @@ const styles = {
 
     minHeight: 27,
 
-    padding:
-      "0 9px",
+    padding: "0 9px",
 
     borderRadius: 999,
 
@@ -4313,8 +4297,7 @@ const styles = {
 
     fontWeight: 800,
 
-    whiteSpace:
-      "nowrap",
+    whiteSpace: "nowrap",
   },
 
   accessNeutral: {
@@ -4324,7 +4307,7 @@ const styles = {
     fontSize: 11,
   },
 
-  /* CIDADE */
+  /* CIDADE TABELA */
 
   cityCell: {
     display: "flex",
@@ -4361,8 +4344,7 @@ const styles = {
     color:
       COLORS.muted,
 
-    whiteSpace:
-      "nowrap",
+    whiteSpace: "nowrap",
   },
 
   detailsButton: {
@@ -4379,22 +4361,18 @@ const styles = {
 
     gap: 7,
 
-    padding:
-      "0 11px",
+    padding: "0 11px",
 
-    border:
-      "none",
+    border: "none",
 
     borderRadius: 10,
 
     background:
       COLORS.green,
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
 
     fontSize: 10,
 
@@ -4418,8 +4396,7 @@ const styles = {
     padding:
       "42px 20px",
 
-    textAlign:
-      "center",
+    textAlign: "center",
 
     borderTop:
       `1px solid ${COLORS.borderSoft}`,
@@ -4477,22 +4454,18 @@ const styles = {
 
     marginTop: 13,
 
-    padding:
-      "0 14px",
+    padding: "0 14px",
 
-    border:
-      "none",
+    border: "none",
 
     borderRadius: 10,
 
     background:
       COLORS.green,
 
-    color:
-      "#FFFFFF",
+    color: "#FFFFFF",
 
-    cursor:
-      "pointer",
+    cursor: "pointer",
 
     fontSize: 11,
 
@@ -4510,8 +4483,7 @@ const styles = {
     justifyContent:
       "space-between",
 
-    flexWrap:
-      "wrap",
+    flexWrap: "wrap",
 
     gap: 10,
 
@@ -4529,8 +4501,7 @@ const styles = {
   },
 
   footerDot: {
-    margin:
-      "0 7px",
+    margin: "0 7px",
 
     color:
       COLORS.subtle,
