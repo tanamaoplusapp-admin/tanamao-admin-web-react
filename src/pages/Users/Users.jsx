@@ -1,28 +1,97 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { useNavigate } from "react-router-dom";
+
 import Page from "../../layout/Page";
 import { getUsers } from "../../services/userService";
 
+/* =========================================================
+   CORES
+========================================================= */
+
+const COLORS = {
+  green: "#2E4F2F",
+  greenDark: "#1D3A22",
+  greenSoft: "#E7F0E7",
+
+  orange: "#FF9900",
+  orangeDark: "#A85A00",
+  orangeSoft: "#FFF1DD",
+
+  blue: "#2563EB",
+  blueSoft: "#EFF6FF",
+
+  purple: "#7C3AED",
+  purpleSoft: "#F5F3FF",
+
+  red: "#DC2626",
+  redSoft: "#FEF2F2",
+
+  yellow: "#D97706",
+  yellowSoft: "#FFF7E6",
+
+  surface: "#FFFFFF",
+
+  background: "#EEF3EE",
+
+  text: "#182018",
+  muted: "#6B7280",
+  subtle: "#9CA3AF",
+
+  border: "#DDE5DD",
+  borderSoft: "#E7ECE7",
+};
+
+/* =========================================================
+   COMPONENTE
+========================================================= */
+
 export default function Users() {
+  const navigate = useNavigate();
+
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
- const [cityFilter, setCityFilter] = useState("all");
-const [citiesExpanded, setCitiesExpanded] = useState(false);
+  const [loading, setLoading] =
+    useState(true);
 
-const navigate = useNavigate();
+  const [error, setError] =
+    useState("");
 
-  useEffect(() => {
-    load();
-  }, []);
+  const [lastUpdated, setLastUpdated] =
+    useState(null);
 
-  async function load() {
+  const [search, setSearch] =
+    useState("");
+
+  const [filter, setFilter] =
+    useState("all");
+
+  const [cityFilter, setCityFilter] =
+    useState("all");
+
+  const [
+    citiesExpanded,
+    setCitiesExpanded,
+  ] = useState(false);
+
+  /* =========================================================
+     CARREGAR USUÁRIOS
+
+     ENDPOINT/SERVICE MANTIDO
+  ========================================================= */
+
+  const load = useCallback(async () => {
     try {
       setLoading(true);
+      setError("");
 
-      const data = await getUsers();
+      const data =
+        await getUsers();
 
       const usersData =
         data?.items ||
@@ -35,6 +104,10 @@ const navigate = useNavigate();
           ? usersData
           : []
       );
+
+      setLastUpdated(
+        new Date()
+      );
     } catch (error) {
       console.error(
         "[Users] Erro ao carregar usuários:",
@@ -42,180 +115,388 @@ const navigate = useNavigate();
       );
 
       setUsers([]);
+
+      setError(
+        "Não foi possível carregar os usuários."
+      );
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-/* =========================================================
-   CIDADES REAIS CADASTRADAS
-========================================================= */
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-const cities = useMemo(() => {
-  const map = new Map();
+  /* =========================================================
+     CIDADES REAIS CADASTRADAS
+  ========================================================= */
 
-  users.forEach((user) => {
-    const city = getUserCity(user);
-    const state = getUserState(user);
+  const cities =
+    useMemo(() => {
+      const map =
+        new Map();
 
-    if (!city || city === "Não informada") {
-      return;
-    }
+      users.forEach(
+        (user) => {
+          const city =
+            getUserCity(user);
 
-    const normalizedCity = normalizeCity(city);
-    const normalizedState = normalizeState(state);
+          const state =
+            getUserState(user);
 
-    if (!normalizedCity) {
-      return;
-    }
+          if (
+            !city ||
+            city ===
+              "Não informada"
+          ) {
+            return;
+          }
 
-    const key = `${normalizedCity}-${normalizedState}`;
+          const normalizedCity =
+            normalizeCity(
+              city
+            );
 
-    if (!map.has(key)) {
-      map.set(key, {
-        key,
-        city: formatCityName(city),
-        state: normalizedState
-          ? formatStateName(state)
-          : "",
-        count: 0,
-      });
-    }
+          const normalizedState =
+            normalizeState(
+              state
+            );
 
-    map.get(key).count += 1;
-  });
+          if (
+            !normalizedCity
+          ) {
+            return;
+          }
 
-  return Array.from(map.values())
-    .sort((a, b) => {
-      if (b.count !== a.count) {
-        return b.count - a.count;
-      }
+          const key =
+            `${normalizedCity}-${normalizedState}`;
 
-      return a.city.localeCompare(
-        b.city,
-        "pt-BR"
+          if (
+            !map.has(key)
+          ) {
+            map.set(
+              key,
+              {
+                key,
+
+                city:
+                  formatCityName(
+                    city
+                  ),
+
+                state:
+                  normalizedState
+                    ? formatStateName(
+                        state
+                      )
+                    : "",
+
+                count: 0,
+              }
+            );
+          }
+
+          map.get(key).count +=
+            1;
+        }
       );
-    });
-}, [users]);
+
+      return Array.from(
+        map.values()
+      ).sort(
+        (a, b) => {
+          if (
+            b.count !==
+            a.count
+          ) {
+            return (
+              b.count -
+              a.count
+            );
+          }
+
+          return a.city.localeCompare(
+            b.city,
+            "pt-BR"
+          );
+        }
+      );
+    }, [users]);
+
   /* =========================================================
      FILTROS
   ========================================================= */
 
-  const filteredUsers = useMemo(() => {
-    return users
-      .filter((u) => {
-        if (filter === "all") {
-          return true;
-        }
-
-        if (filter === "prestador") {
-          return (
-            u.role === "profissional" ||
-            u.temPerfilProfissional === true
-          );
-        }
-
-        if (filter === "cliente") {
-          return u.role === "cliente";
-        }
-
-        if (filter === "blocked") {
-          return u.status === "blocked";
-        }
-
-        if (filter === "active") {
-          return u.status !== "blocked";
-        }
-
-        return true;
-      })
-
-      .filter((u) => {
-        if (cityFilter === "all") {
-          return true;
-        }
-
-      const city = getUserCity(u);
-const state = getUserState(u);
-
-const key = `${normalizeCity(city)}-${normalizeState(state)}`;
-
-return key === cityFilter;
-      })
-
-      .filter((u) => {
-        const term = normalizeText(search);
-
-        if (!term) {
-          return true;
-        }
-
-        const city = getUserCity(u);
-        const state = getUserState(u);
-
-        return [
-          u.name,
-          u.email,
-          u.role,
-          u.phone,
-          u.telefone,
-          city,
-          state,
-          `${city} ${state || ""}`,
-        ].some((value) =>
-          normalizeText(value).includes(term)
+  const filteredUsers =
+    useMemo(() => {
+      const term =
+        normalizeText(
+          search
         );
-      });
-  }, [
-    users,
-    filter,
-    cityFilter,
-    search,
-  ]);
 
-/* =========================================================
-   KPIs
-========================================================= */
+      return users
+        .filter((user) => {
+          if (
+            filter ===
+            "all"
+          ) {
+            return true;
+          }
 
-const total = users.length;
+          if (
+            filter ===
+            "prestador"
+          ) {
+            return (
+              user.role ===
+                "profissional" ||
+              user.temPerfilProfissional ===
+                true
+            );
+          }
 
-const active = users.filter(
-  (u) => u.status !== "blocked"
-).length;
+          if (
+            filter ===
+            "cliente"
+          ) {
+            return (
+              user.role ===
+              "cliente"
+            );
+          }
 
-const inactive = users.filter(
-  (u) => u.status === "blocked"
-).length;
+          if (
+            filter ===
+            "blocked"
+          ) {
+            return (
+              user.status ===
+              "blocked"
+            );
+          }
 
-const prestadores = users.filter(
-  (u) =>
-    u.role === "profissional" ||
-    u.temPerfilProfissional === true
-).length;
+          if (
+            filter ===
+            "active"
+          ) {
+            return (
+              user.status !==
+              "blocked"
+            );
+          }
 
-const clientes = users.filter(
-  (u) => u.role === "cliente"
-).length;
+          return true;
+        })
 
-const clientesPrestadores = users.filter(
-  (u) =>
-    u.role === "cliente" &&
-    u.temPerfilProfissional === true
-).length;
+        .filter((user) => {
+          if (
+            cityFilter ===
+            "all"
+          ) {
+            return true;
+          }
 
-const totalCities = cities.length;
+          const city =
+            getUserCity(
+              user
+            );
 
-const topCity = cities.length > 0
-  ? cities[0]
-  : null;
+          const state =
+            getUserState(
+              user
+            );
+
+          const key =
+            `${normalizeCity(
+              city
+            )}-${normalizeState(
+              state
+            )}`;
+
+          return (
+            key ===
+            cityFilter
+          );
+        })
+
+        .filter((user) => {
+          if (!term) {
+            return true;
+          }
+
+          const city =
+            getUserCity(
+              user
+            );
+
+          const state =
+            getUserState(
+              user
+            );
+
+          return [
+            user.name,
+            user.email,
+            user.role,
+            user.phone,
+            user.telefone,
+            city,
+            state,
+            `${city} ${
+              state || ""
+            }`,
+          ].some((value) =>
+            normalizeText(
+              value
+            ).includes(
+              term
+            )
+          );
+        });
+    }, [
+      users,
+      filter,
+      cityFilter,
+      search,
+    ]);
+
   /* =========================================================
-     LOADING
+     KPIs
   ========================================================= */
 
-  if (loading) {
+  const total =
+    users.length;
+
+  const active =
+    users.filter(
+      (user) =>
+        user.status !==
+        "blocked"
+    ).length;
+
+  const inactive =
+    users.filter(
+      (user) =>
+        user.status ===
+        "blocked"
+    ).length;
+
+  const prestadores =
+    users.filter(
+      (user) =>
+        user.role ===
+          "profissional" ||
+        user.temPerfilProfissional ===
+          true
+    ).length;
+
+  const clientes =
+    users.filter(
+      (user) =>
+        user.role ===
+        "cliente"
+    ).length;
+
+  const clientesPrestadores =
+    users.filter(
+      (user) =>
+        user.role ===
+          "cliente" &&
+        user.temPerfilProfissional ===
+          true
+    ).length;
+
+  const motoristas =
+    users.filter(
+      (user) =>
+        user.role ===
+        "motorista"
+    ).length;
+
+  const empresas =
+    users.filter(
+      (user) =>
+        user.role ===
+        "empresa"
+    ).length;
+
+  const totalCities =
+    cities.length;
+
+  const topCity =
+    cities.length > 0
+      ? cities[0]
+      : null;
+
+  const activePercent =
+    total > 0
+      ? (
+          (active /
+            total) *
+          100
+        ).toFixed(1)
+      : "0.0";
+
+  /* =========================================================
+     FILTROS ATIVOS
+  ========================================================= */
+
+  const hasFilters =
+    filter !== "all" ||
+    cityFilter !== "all" ||
+    search.trim().length >
+      0;
+
+  const clearFilters =
+    useCallback(() => {
+      setFilter("all");
+      setCityFilter(
+        "all"
+      );
+      setSearch("");
+    }, []);
+
+  /* =========================================================
+     LOADING INICIAL
+  ========================================================= */
+
+  if (
+    loading &&
+    users.length === 0
+  ) {
     return (
-      <Page title="Usuários">
-        Carregando…
+      <Page
+        title="Usuários"
+        subtitle="Gestão completa de usuários por perfil e cidade"
+      >
+        <div
+          style={
+            styles.loadingRoot
+          }
+        >
+          <div
+            style={
+              styles.loadingSpinner
+            }
+          />
+
+          <div
+            style={
+              styles.loadingTitle
+            }
+          >
+            Carregando usuários
+          </div>
+
+          <div
+            style={
+              styles.loadingText
+            }
+          >
+            Organizando a base da plataforma...
+          </div>
+        </div>
       </Page>
     );
   }
@@ -225,569 +506,1483 @@ const topCity = cities.length > 0
       title="Usuários"
       subtitle="Gestão completa de usuários por perfil e cidade"
     >
-      {/* ================= KPIs ================= */}
+      {/* =====================================================
+          CSS INTERATIVO / RESPONSIVO
+      ===================================================== */}
 
-    <div style={kpiGrid}>
-  <KPI
-    title="Total de usuários"
-    value={total}
-    active={filter === "all"}
-    onClick={() =>
-      setFilter("all")
-    }
-  />
+      <style>
+        {`
+          .users-dashboard {
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
 
-  <KPI
-    title="Ativos"
-    value={active}
-    color="#16A34A"
-    active={filter === "active"}
-    onClick={() =>
-      setFilter("active")
-    }
-  />
-
-  <KPI
-    title="Inativos"
-    value={inactive}
-    color="#DC2626"
-    active={filter === "blocked"}
-    onClick={() =>
-      setFilter("blocked")
-    }
-  />
-
-  <KPI
-    title="Clientes"
-    value={clientes}
-    active={filter === "cliente"}
-    onClick={() =>
-      setFilter("cliente")
-    }
-  />
-
-  <KPI
-    title="Prestadores"
-    value={prestadores}
-    active={filter === "prestador"}
-    onClick={() =>
-      setFilter("prestador")
-    }
-  />
-
-  <KPI
-    title="Cliente + Prestador"
-    value={clientesPrestadores}
-  />
-
-  <KPI
-    title="Cidades"
-    value={totalCities}
-  />
-
-  <KPI
-    title="Maior concentração"
-    value={
-      topCity
-        ? `${topCity.city} (${topCity.count})`
-        : "—"
-    }
-  />
-</div>
-
-      {/* ================= RESUMO POR CIDADE ================= */}
-
-  {/* ================= RESUMO POR CIDADE ================= */}
-
-<div style={citySection}>
-  <div style={cityHeader}>
-    <div>
-      <h3 style={cityTitle}>
-        Usuários por cidade
-      </h3>
-
-      <div style={citySubtitle}>
-        {totalCities} cidades cadastradas
-        {topCity
-          ? ` • Maior concentração: ${topCity.city} (${topCity.count})`
-          : ""}
-      </div>
-    </div>
-
-    <div style={cityHeaderActions}>
-      {cityFilter !== "all" && (
-        <button
-          style={clearCityButton}
-          onClick={() =>
-            setCityFilter("all")
+            box-sizing: border-box;
           }
-        >
-          Limpar filtro
-        </button>
-      )}
 
-      <button
-        style={expandCityButton}
-        onClick={() =>
-          setCitiesExpanded(
-            (value) => !value
-          )
+          .users-kpi-grid {
+            display: grid;
+            grid-template-columns:
+              repeat(
+                4,
+                minmax(0, 1fr)
+              );
+
+            gap: 12px;
+          }
+
+          .users-kpi {
+            transition:
+              transform 170ms ease,
+              box-shadow 170ms ease,
+              border-color 170ms ease;
+          }
+
+          .users-kpi:hover {
+            transform:
+              translateY(-2px);
+
+            box-shadow:
+              0 9px 24px
+              rgba(
+                31,
+                55,
+                34,
+                0.08
+              );
+          }
+
+          .users-city-card {
+            transition:
+              transform 160ms ease,
+              box-shadow 160ms ease,
+              border-color 160ms ease;
+          }
+
+          .users-city-card:hover {
+            transform:
+              translateY(-2px);
+
+            box-shadow:
+              0 7px 18px
+              rgba(
+                31,
+                55,
+                34,
+                0.07
+              );
+          }
+
+          .users-main-button,
+          .users-secondary-button,
+          .users-detail-button {
+            transition:
+              transform 150ms ease,
+              background 150ms ease,
+              box-shadow 150ms ease;
+          }
+
+          .users-main-button:hover,
+          .users-detail-button:hover {
+            transform:
+              translateY(-1px);
+
+            box-shadow:
+              0 5px 14px
+              rgba(
+                46,
+                79,
+                47,
+                0.18
+              );
+          }
+
+          .users-secondary-button:hover {
+            transform:
+              translateY(-1px);
+
+            background:
+              #E7EEE7 !important;
+          }
+
+          .users-table-row {
+            transition:
+              background 130ms ease;
+          }
+
+          .users-table-row:hover {
+            background:
+              #F8FAF8;
+          }
+
+          .users-search-input:focus,
+          .users-filter-select:focus {
+            outline: none;
+
+            border-color:
+              #AFC5B0 !important;
+
+            box-shadow:
+              0 0 0 3px
+              rgba(
+                46,
+                79,
+                47,
+                0.08
+              );
+          }
+
+          .users-refresh-icon {
+            display:
+              inline-block;
+          }
+
+          .users-refresh-icon.loading {
+            animation:
+              usersSpin
+              800ms linear
+              infinite;
+          }
+
+          @keyframes usersSpin {
+            to {
+              transform:
+                rotate(360deg);
+            }
+          }
+
+          @media (
+            max-width: 1100px
+          ) {
+            .users-kpi-grid {
+              grid-template-columns:
+                repeat(
+                  2,
+                  minmax(0, 1fr)
+                );
+            }
+          }
+
+          @media (
+            max-width: 760px
+          ) {
+            .users-dashboard-shell {
+              padding:
+                14px !important;
+
+              border-radius:
+                20px !important;
+            }
+
+            .users-hero {
+              padding:
+                20px !important;
+            }
+
+            .users-hero-top {
+              flex-direction:
+                column;
+
+              align-items:
+                flex-start !important;
+            }
+
+            .users-hero-actions {
+              width: 100%;
+            }
+
+            .users-kpi-grid {
+              grid-template-columns:
+                repeat(
+                  2,
+                  minmax(0, 1fr)
+                );
+            }
+
+            .users-toolbar {
+              align-items:
+                stretch !important;
+
+              flex-direction:
+                column;
+            }
+
+            .users-filter-group {
+              width: 100%;
+            }
+
+            .users-filter-select {
+              flex: 1;
+              min-width:
+                150px;
+            }
+
+            .users-city-header {
+              align-items:
+                flex-start !important;
+
+              flex-direction:
+                column;
+            }
+          }
+
+          @media (
+            max-width: 500px
+          ) {
+            .users-kpi-grid {
+              grid-template-columns:
+                1fr;
+            }
+
+            .users-hero-stats {
+              grid-template-columns:
+                1fr !important;
+            }
+          }
+        `}
+      </style>
+
+      {/* =====================================================
+          FUNDO DA ÁREA
+      ===================================================== */}
+
+      <div
+        className="users-dashboard users-dashboard-shell"
+        style={
+          styles.dashboardShell
         }
       >
-        {citiesExpanded
-          ? "⌃ Recolher"
-          : "⌄ Ver cidades"}
-      </button>
-    </div>
-  </div>
+        {/* ===================================================
+            HERO
+        =================================================== */}
 
-  {citiesExpanded && (
-    <div style={cityCards}>
-      <CityCard
-        city="Todas as cidades"
-        count={total}
-        active={cityFilter === "all"}
-        onClick={() =>
-          setCityFilter("all")
-        }
-      />
-
-      {cities.map((item) => (
-        <CityCard
-          key={item.key}
-          city={
-            item.state
-              ? `${item.city} - ${item.state}`
-              : item.city
+        <div
+          className="users-hero"
+          style={
+            styles.hero
           }
-          count={item.count}
-          active={
-            cityFilter === item.key
-          }
-          onClick={() =>
-            setCityFilter(item.key)
-          }
-        />
-      ))}
-    </div>
-  )}
-</div>
-      {/* ================= LISTA ================= */}
-
-      <div style={card}>
-        <div style={toolbar}>
-          <input
-            placeholder="Buscar por nome, email ou cidade..."
-            value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
+        >
+          <div
+            className="users-hero-top"
+            style={
+              styles.heroTop
             }
-            style={input}
+          >
+            <div>
+              <div
+                style={
+                  styles.heroEyebrow
+                }
+              >
+                CENTRAL DE USUÁRIOS
+              </div>
+
+              <div
+                style={
+                  styles.heroTitle
+                }
+              >
+                Gestão da base
+              </div>
+
+              <div
+                style={
+                  styles.heroSubtitle
+                }
+              >
+                Consulte perfis,
+                acompanhe cidades,
+                encontre usuários e
+                monitore a situação da
+                base.
+              </div>
+            </div>
+
+            <div
+              className="users-hero-actions"
+              style={
+                styles.heroActions
+              }
+            >
+              <button
+                type="button"
+                className="users-main-button"
+                style={
+                  styles.refreshButton
+                }
+                onClick={load}
+                disabled={
+                  loading
+                }
+              >
+                <span
+                  className={`users-refresh-icon ${
+                    loading
+                      ? "loading"
+                      : ""
+                  }`}
+                >
+                  ↻
+                </span>
+
+                {loading
+                  ? "Atualizando..."
+                  : "Atualizar dados"}
+              </button>
+            </div>
+          </div>
+
+          <div
+            style={
+              styles.syncRow
+            }
+          >
+            <span
+              style={
+                styles.liveDot
+              }
+            />
+
+            {loading
+              ? "Sincronizando usuários..."
+              : lastUpdated
+              ? `Atualizado às ${formatTime(
+                  lastUpdated
+                )}`
+              : "Dados carregados"}
+          </div>
+
+          <div
+            className="users-hero-stats"
+            style={
+              styles.heroStats
+            }
+          >
+            <HeroStat
+              label="Usuários"
+              value={
+                total
+              }
+            />
+
+            <HeroStat
+              label="Ativos"
+              value={
+                active
+              }
+            />
+
+            <HeroStat
+              label="Cidades"
+              value={
+                totalCities
+              }
+            />
+
+            <HeroStat
+              label="Base ativa"
+              value={`${activePercent}%`}
+            />
+          </div>
+        </div>
+
+        {/* ===================================================
+            ERRO
+        =================================================== */}
+
+        {error ? (
+          <div
+            style={
+              styles.errorBox
+            }
+          >
+            <div
+              style={
+                styles.errorLeft
+              }
+            >
+              <div
+                style={
+                  styles.errorIcon
+                }
+              >
+                !
+              </div>
+
+              <div>
+                <div
+                  style={
+                    styles.errorTitle
+                  }
+                >
+                  Não foi possível carregar a base
+                </div>
+
+                <div
+                  style={
+                    styles.errorText
+                  }
+                >
+                  {error}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="users-detail-button"
+              style={
+                styles.errorButton
+              }
+              onClick={load}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : null}
+
+        {/* ===================================================
+            KPIs
+        =================================================== */}
+
+        <SectionHeading
+          eyebrow="VISÃO GERAL"
+          title="Resumo da base"
+          description="Clique nos indicadores para aplicar filtros rapidamente."
+        />
+
+        <div
+          className="users-kpi-grid"
+        >
+          <KPI
+            icon="👥"
+            title="Total de usuários"
+            value={total}
+            active={
+              filter ===
+              "all"
+            }
+            color={
+              COLORS.greenDark
+            }
+            iconBackground={
+              COLORS.greenSoft
+            }
+            onClick={() =>
+              setFilter("all")
+            }
           />
 
-          <div style={filterGroup}>
-            <select
-              value={cityFilter}
-              onChange={(e) =>
-                setCityFilter(
-                  e.target.value
-                )
+          <KPI
+            icon="✓"
+            title="Ativos"
+            value={active}
+            active={
+              filter ===
+              "active"
+            }
+            color={
+              COLORS.green
+            }
+            iconBackground={
+              COLORS.greenSoft
+            }
+            onClick={() =>
+              setFilter(
+                "active"
+              )
+            }
+          />
+
+          <KPI
+            icon="!"
+            title="Bloqueados"
+            value={inactive}
+            active={
+              filter ===
+              "blocked"
+            }
+            color={
+              COLORS.red
+            }
+            iconBackground={
+              COLORS.redSoft
+            }
+            onClick={() =>
+              setFilter(
+                "blocked"
+              )
+            }
+          />
+
+          <KPI
+            icon="🛍"
+            title="Clientes"
+            value={clientes}
+            active={
+              filter ===
+              "cliente"
+            }
+            color={
+              COLORS.blue
+            }
+            iconBackground={
+              COLORS.blueSoft
+            }
+            onClick={() =>
+              setFilter(
+                "cliente"
+              )
+            }
+          />
+
+          <KPI
+            icon="🧑‍🔧"
+            title="Prestadores"
+            value={
+              prestadores
+            }
+            active={
+              filter ===
+              "prestador"
+            }
+            color={
+              COLORS.orangeDark
+            }
+            iconBackground={
+              COLORS.orangeSoft
+            }
+            onClick={() =>
+              setFilter(
+                "prestador"
+              )
+            }
+          />
+
+          <KPI
+            icon="↔"
+            title="Cliente + Prestador"
+            value={
+              clientesPrestadores
+            }
+            color={
+              COLORS.purple
+            }
+            iconBackground={
+              COLORS.purpleSoft
+            }
+          />
+
+          <KPI
+            icon="🚗"
+            title="Motoristas"
+            value={
+              motoristas
+            }
+            color={
+              COLORS.purple
+            }
+            iconBackground={
+              COLORS.purpleSoft
+            }
+          />
+
+          <KPI
+            icon="🏢"
+            title="Empresas"
+            value={
+              empresas
+            }
+            color={
+              COLORS.green
+            }
+            iconBackground={
+              COLORS.greenSoft
+            }
+          />
+        </div>
+
+        {/* ===================================================
+            CIDADES
+        =================================================== */}
+
+        <section
+          style={
+            styles.section
+          }
+        >
+          <div
+            className="users-city-header"
+            style={
+              styles.cityHeader
+            }
+          >
+            <div>
+              <div
+                style={
+                  styles.sectionEyebrow
+                }
+              >
+                DISTRIBUIÇÃO GEOGRÁFICA
+              </div>
+
+              <div
+                style={
+                  styles.sectionTitle
+                }
+              >
+                Usuários por cidade
+              </div>
+
+              <div
+                style={
+                  styles.sectionDescription
+                }
+              >
+                {totalCities}{" "}
+                {totalCities === 1
+                  ? "cidade cadastrada"
+                  : "cidades cadastradas"}
+
+                {topCity
+                  ? ` • Maior concentração: ${topCity.city} (${topCity.count})`
+                  : ""}
+              </div>
+            </div>
+
+            <div
+              style={
+                styles.cityHeaderActions
               }
-              style={select}
             >
-              <option value="all">
-                Todas as cidades
-              </option>
-
-              {cities.map((item) => (
-                <option
-                  key={item.key}
-                  value={item.key}
+              {cityFilter !==
+                "all" && (
+                <button
+                  type="button"
+                  className="users-secondary-button"
+                  style={
+                    styles.secondaryButton
+                  }
+                  onClick={() =>
+                    setCityFilter(
+                      "all"
+                    )
+                  }
                 >
-                  {item.city}
-                  {item.state
-                    ? ` - ${item.state}`
-                    : ""}
-                  {" "}
-                  ({item.count})
-                </option>
-              ))}
-            </select>
+                  Limpar cidade
+                </button>
+              )}
 
-            <select
-              value={filter}
-              onChange={(e) =>
-                setFilter(
-                  e.target.value
-                )
+              <button
+                type="button"
+                className="users-main-button"
+                style={
+                  styles.cityExpandButton
+                }
+                onClick={() =>
+                  setCitiesExpanded(
+                    (value) =>
+                      !value
+                  )
+                }
+              >
+                {citiesExpanded
+                  ? "⌃ Recolher"
+                  : "⌄ Ver cidades"}
+              </button>
+            </div>
+          </div>
+
+          {citiesExpanded ? (
+            <div
+              style={
+                styles.cityCards
               }
-              style={select}
             >
-              <option value="all">
-                Todos os perfis
-              </option>
+              <CityCard
+                city="Todas as cidades"
+                count={
+                  total
+                }
+                active={
+                  cityFilter ===
+                  "all"
+                }
+                onClick={() =>
+                  setCityFilter(
+                    "all"
+                  )
+                }
+              />
 
-              <option value="prestador">
-                Prestadores
-              </option>
+              {cities.map(
+                (item) => (
+                  <CityCard
+                    key={
+                      item.key
+                    }
+                    city={
+                      item.state
+                        ? `${item.city} - ${item.state}`
+                        : item.city
+                    }
+                    count={
+                      item.count
+                    }
+                    active={
+                      cityFilter ===
+                      item.key
+                    }
+                    onClick={() =>
+                      setCityFilter(
+                        item.key
+                      )
+                    }
+                  />
+                )
+              )}
+            </div>
+          ) : (
+            <div
+              style={
+                styles.cityPreview
+              }
+            >
+              <div
+                style={
+                  styles.cityPreviewIcon
+                }
+              >
+                📍
+              </div>
 
-              <option value="cliente">
-                Clientes
-              </option>
-
-              <option value="active">
-                Ativos
-              </option>
-
-              <option value="blocked">
-                Bloqueados
-              </option>
-            </select>
-          </div>
-        </div>
-
-        {/* RESULTADO DO FILTRO */}
-
-        <div style={resultInfo}>
-          Exibindo{" "}
-          <strong>
-            {filteredUsers.length}
-          </strong>{" "}
-          de{" "}
-          <strong>
-            {total}
-          </strong>{" "}
-          usuários
-        </div>
-
-        <div style={tableScroll}>
-          <table style={table}>
-            <thead>
-              <tr>
-                <Th>
-                  Usuário
-                </Th>
-
-                <Th>
-                  Tipo
-                </Th>
-
-                <Th>
-                  Cidade
-                </Th>
-
-                <Th>
-                  Status
-                </Th>
-
-                <Th>
-                  Acesso
-                </Th>
-
-                <Th>
-                  Criado
-                </Th>
-
-                <Th align="right">
-                  Ações
-                </Th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredUsers.map((u) => (
-                <tr
-                  key={u._id}
-                  style={row}
+              <div>
+                <div
+                  style={
+                    styles.cityPreviewTitle
+                  }
                 >
-                  {/* USUÁRIO */}
+                  {topCity
+                    ? `${topCity.city}${
+                        topCity.state
+                          ? ` - ${topCity.state}`
+                          : ""
+                      }`
+                    : "Nenhuma cidade encontrada"}
+                </div>
 
-                  <Td>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                      }}
-                    >
-                      {u.name || "—"}
-                    </div>
+                <div
+                  style={
+                    styles.cityPreviewText
+                  }
+                >
+                  {topCity
+                    ? `${topCity.count} usuários na cidade com maior concentração.`
+                    : "A localização dos usuários aparecerá aqui."}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
 
-                    <div style={email}>
-                      {u.email || "—"}
-                    </div>
-                  </Td>
+        {/* ===================================================
+            LISTA
+        =================================================== */}
 
-                  {/* TIPO */}
+        <section
+          style={
+            styles.section
+          }
+        >
+          <SectionHeading
+            eyebrow="GESTÃO"
+            title="Lista de usuários"
+            description="Pesquise e filtre a base para localizar qualquer conta."
+            noMargin
+          />
 
-                  <Td>
-                    <Badge>
-                      {formatRole(u)}
-                    </Badge>
-                  </Td>
+          <div
+            style={
+              styles.listCard
+            }
+          >
+            {/* TOOLBAR */}
 
-                  {/* CIDADE */}
+            <div
+              className="users-toolbar"
+              style={
+                styles.toolbar
+              }
+            >
+              <div
+                style={
+                  styles.searchWrapper
+                }
+              >
+                <div
+                  style={
+                    styles.searchIcon
+                  }
+                >
+                  ⌕
+                </div>
 
-                  <Td>
-                    <div style={cityName}>
-                      {getUserCity(u)}
-                    </div>
+                <input
+                  className="users-search-input"
+                  placeholder="Buscar por nome, email, telefone ou cidade..."
+                  value={
+                    search
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setSearch(
+                      event.target
+                        .value
+                    )
+                  }
+                  style={
+                    styles.input
+                  }
+                />
 
-                    {getUserState(u) && (
-                      <div style={stateName}>
-                        {getUserState(u)}
-                      </div>
-                    )}
-                  </Td>
+                {search ? (
+                  <button
+                    type="button"
+                    style={
+                      styles.clearSearch
+                    }
+                    onClick={() =>
+                      setSearch("")
+                    }
+                    title="Limpar busca"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
 
-                  {/* STATUS */}
+              <div
+                className="users-filter-group"
+                style={
+                  styles.filterGroup
+                }
+              >
+                <select
+                  className="users-filter-select"
+                  value={
+                    cityFilter
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setCityFilter(
+                      event.target
+                        .value
+                    )
+                  }
+                  style={
+                    styles.select
+                  }
+                >
+                  <option value="all">
+                    Todas as cidades
+                  </option>
 
-                  <Td>
-                    <Status
-                      status={u.status}
-                    />
-                  </Td>
+                  {cities.map(
+                    (item) => (
+                      <option
+                        key={
+                          item.key
+                        }
+                        value={
+                          item.key
+                        }
+                      >
+                        {item.city}
+                        {item.state
+                          ? ` - ${item.state}`
+                          : ""}{" "}
+                        ({item.count})
+                      </option>
+                    )
+                  )}
+                </select>
 
-                  {/* ACESSO */}
+                <select
+                  className="users-filter-select"
+                  value={
+                    filter
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setFilter(
+                      event.target
+                        .value
+                    )
+                  }
+                  style={
+                    styles.select
+                  }
+                >
+                  <option value="all">
+                    Todos os perfis
+                  </option>
 
-                  <Td>
-                    {formatAccess(u)}
-                  </Td>
+                  <option value="prestador">
+                    Prestadores
+                  </option>
 
-                  {/* CRIADO */}
+                  <option value="cliente">
+                    Clientes
+                  </option>
 
-                  <Td>
-                    {formatDate(
-                      u.createdAt
-                    )}
-                  </Td>
+                  <option value="active">
+                    Ativos
+                  </option>
 
-                  {/* AÇÕES */}
+                  <option value="blocked">
+                    Bloqueados
+                  </option>
+                </select>
 
-                  <Td align="right">
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/users/${u._id}`
-                        )
-                      }
-                      style={btn}
-                    >
-                      Detalhes
-                    </button>
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                {hasFilters ? (
+                  <button
+                    type="button"
+                    className="users-secondary-button"
+                    style={
+                      styles.clearFiltersButton
+                    }
+                    onClick={
+                      clearFilters
+                    }
+                  >
+                    × Limpar filtros
+                  </button>
+                ) : null}
+              </div>
+            </div>
 
-        {filteredUsers.length === 0 && (
-          <div style={empty}>
-            Nenhum usuário encontrado com os filtros selecionados.
+            {/* INFO DO RESULTADO */}
+
+            <div
+              style={
+                styles.resultBar
+              }
+            >
+              <div>
+                Exibindo{" "}
+                <strong
+                  style={{
+                    color:
+                      COLORS.greenDark,
+                  }}
+                >
+                  {
+                    filteredUsers.length
+                  }
+                </strong>{" "}
+                de{" "}
+                <strong
+                  style={{
+                    color:
+                      COLORS.greenDark,
+                  }}
+                >
+                  {total}
+                </strong>{" "}
+                usuários
+              </div>
+
+              {hasFilters ? (
+                <div
+                  style={
+                    styles.filteredBadge
+                  }
+                >
+                  Filtro ativo
+                </div>
+              ) : null}
+            </div>
+
+            {/* TABELA */}
+
+            <div
+              style={
+                styles.tableScroll
+              }
+            >
+              <table
+                style={
+                  styles.table
+                }
+              >
+                <thead>
+                  <tr>
+                    <Th>
+                      Usuário
+                    </Th>
+
+                    <Th>
+                      Tipo
+                    </Th>
+
+                    <Th>
+                      Cidade
+                    </Th>
+
+                    <Th>
+                      Status
+                    </Th>
+
+                    <Th>
+                      Acesso
+                    </Th>
+
+                    <Th>
+                      Criado
+                    </Th>
+
+                    <Th align="right">
+                      Ações
+                    </Th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredUsers.map(
+                    (user) => (
+                      <tr
+                        key={
+                          user._id
+                        }
+                        className="users-table-row"
+                        style={
+                          styles.tableRow
+                        }
+                      >
+                        {/* USUÁRIO */}
+
+                        <Td>
+                          <UserIdentity
+                            user={
+                              user
+                            }
+                          />
+                        </Td>
+
+                        {/* TIPO */}
+
+                        <Td>
+                          <RoleBadge
+                            user={
+                              user
+                            }
+                          />
+                        </Td>
+
+                        {/* CIDADE */}
+
+                        <Td>
+                          <div
+                            style={
+                              styles.cityCell
+                            }
+                          >
+                            <span>
+                              📍
+                            </span>
+
+                            <div>
+                              <div
+                                style={
+                                  styles.cityName
+                                }
+                              >
+                                {getUserCity(
+                                  user
+                                )}
+                              </div>
+
+                              {getUserState(
+                                user
+                              ) ? (
+                                <div
+                                  style={
+                                    styles.stateName
+                                  }
+                                >
+                                  {getUserState(
+                                    user
+                                  )}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        </Td>
+
+                        {/* STATUS */}
+
+                        <Td>
+                          <StatusBadge
+                            status={
+                              user.status
+                            }
+                          />
+                        </Td>
+
+                        {/* ACESSO */}
+
+                        <Td>
+                          <AccessBadge
+                            user={
+                              user
+                            }
+                          />
+                        </Td>
+
+                        {/* DATA */}
+
+                        <Td>
+                          <div
+                            style={
+                              styles.dateText
+                            }
+                          >
+                            {formatDate(
+                              user.createdAt
+                            )}
+                          </div>
+                        </Td>
+
+                        {/* AÇÕES */}
+
+                        <Td align="right">
+                          <button
+                            type="button"
+                            className="users-detail-button"
+                            onClick={() =>
+                              navigate(
+                                `/users/${user._id}`
+                              )
+                            }
+                            style={
+                              styles.detailsButton
+                            }
+                          >
+                            Detalhes
+                            <span>
+                              →
+                            </span>
+                          </button>
+                        </Td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* VAZIO */}
+
+            {filteredUsers.length ===
+            0 ? (
+              <div
+                style={
+                  styles.emptyState
+                }
+              >
+                <div
+                  style={
+                    styles.emptyIcon
+                  }
+                >
+                  ⌕
+                </div>
+
+                <div
+                  style={
+                    styles.emptyTitle
+                  }
+                >
+                  Nenhum usuário encontrado
+                </div>
+
+                <div
+                  style={
+                    styles.emptyText
+                  }
+                >
+                  Não encontramos usuários com os filtros selecionados.
+                </div>
+
+                {hasFilters ? (
+                  <button
+                    type="button"
+                    className="users-main-button"
+                    style={
+                      styles.emptyButton
+                    }
+                    onClick={
+                      clearFilters
+                    }
+                  >
+                    Limpar filtros
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
-        )}
+        </section>
+
+        {/* ===================================================
+            RODAPÉ
+        =================================================== */}
+
+        <div
+          style={
+            styles.footer
+          }
+        >
+          <div>
+            <strong>
+              Central Tanamão+
+            </strong>
+
+            <span
+              style={
+                styles.footerDot
+              }
+            >
+              •
+            </span>
+
+            Gestão de usuários
+          </div>
+
+          {lastUpdated ? (
+            <div>
+              Última atualização:{" "}
+              <strong>
+                {formatTime(
+                  lastUpdated
+                )}
+              </strong>
+            </div>
+          ) : null}
+        </div>
       </div>
     </Page>
   );
 }
 
 /* =========================================================
-   HELPERS DE LOCALIZAÇÃO
+   HERO STAT
 ========================================================= */
 
-function getUserCity(user) {
+function HeroStat({
+  label,
+  value,
+}) {
   return (
-    user?.cidade ||
-    user?.enderecoSelecionado?.cidade ||
-    user?.enderecos?.[0]?.cidade ||
-    "Não informada"
-  );
-}
+    <div
+      style={
+        styles.heroStat
+      }
+    >
+      <div
+        style={
+          styles.heroStatLabel
+        }
+      >
+        {label}
+      </div>
 
-function getUserState(user) {
-  return (
-    user?.estado ||
-    user?.enderecoSelecionado?.estado ||
-    user?.enderecos?.[0]?.estado ||
-    ""
-  );
-}
-
-function normalizeText(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[\/\\_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-function normalizeCity(value) {
-  let city = normalizeText(value);
-
-  // Remove estado quando vier junto da cidade
-  city = city
-    .replace(/\s*[-/]\s*[a-z]{2}\s*$/i, "")
-    .replace(/\s*,\s*[a-z]{2}\s*$/i, "")
-    .trim();
-
-  return city;
-}
-
-function normalizeState(value) {
-  return normalizeText(value)
-    .replace(/[^a-z]/g, "")
-    .slice(0, 2);
-}
-
-function formatCityName(value) {
-  const normalized = normalizeCity(value);
-
-  if (!normalized) {
-    return "Não informada";
-  }
-
-  return normalized
-    .split(" ")
-    .map((word) => {
-      if (!word) return "";
-
-      return (
-        word.charAt(0).toUpperCase() +
-        word.slice(1)
-      );
-    })
-    .join(" ");
-}
-
-function formatStateName(value) {
-  const state = normalizeState(value);
-
-  return state.toUpperCase();
-}
-
-function formatRole(user) {
-  if (
-    user.role === "cliente" &&
-    user.temPerfilProfissional
-  ) {
-    return "Cliente + Prestador";
-  }
-
-  const roles = {
-    profissional: "Prestador",
-    cliente: "Cliente",
-    empresa: "Empresa",
-    motorista: "Motorista",
-    admin: "Admin",
-  };
-
-  return (
-    roles[user.role] ||
-    user.role ||
-    "—"
-  );
-}
-
-function formatAccess(user) {
-  if (user.role !== "profissional") {
-    return "—";
-  }
-
-  if (!user.acessoExpiraEm) {
-    return "Sem acesso";
-  }
-
-  const expiration = new Date(
-    user.acessoExpiraEm
-  );
-
-  if (
-    Number.isNaN(
-      expiration.getTime()
-    )
-  ) {
-    return "—";
-  }
-
-  if (expiration < new Date()) {
-    return "Expirado";
-  }
-
-  return `Até ${expiration.toLocaleDateString(
-    "pt-BR"
-  )}`;
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "—";
-  }
-
-  return date.toLocaleDateString(
-    "pt-BR"
+      <div
+        style={
+          styles.heroStatValue
+        }
+      >
+        {typeof value ===
+        "number"
+          ? value.toLocaleString(
+              "pt-BR"
+            )
+          : value}
+      </div>
+    </div>
   );
 }
 
 /* =========================================================
-   COMPONENTES
+   CABEÇALHO DE SEÇÃO
 ========================================================= */
 
-function KPI({
+function SectionHeading({
+  eyebrow,
   title,
-  value,
-  color,
-  onClick,
-  active,
+  description,
+  noMargin = false,
 }) {
   return (
     <div
-      onClick={onClick}
       style={{
-        background: active
-          ? "#ECFDF5"
-          : "#fff",
+        ...styles.heading,
 
-        padding: 16,
-
-        borderRadius: 12,
-
-        border: active
-          ? "1px solid #16A34A"
-          : "1px solid #E5E7EB",
-
-        cursor: "pointer",
-
-        transition: "0.15s",
+        marginTop:
+          noMargin
+            ? 0
+            : 28,
       }}
     >
-      <div style={kpiTitle}>
+      <div
+        style={
+          styles.sectionEyebrow
+        }
+      >
+        {eyebrow}
+      </div>
+
+      <div
+        style={
+          styles.sectionTitle
+        }
+      >
+        {title}
+      </div>
+
+      {description ? (
+        <div
+          style={
+            styles.sectionDescription
+          }
+        >
+          {description}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* =========================================================
+   KPI
+========================================================= */
+
+function KPI({
+  icon,
+  title,
+  value,
+  color =
+    COLORS.greenDark,
+  iconBackground =
+    COLORS.greenSoft,
+  onClick,
+  active = false,
+}) {
+  const Component =
+    onClick
+      ? "button"
+      : "div";
+
+  return (
+    <Component
+      type={
+        onClick
+          ? "button"
+          : undefined
+      }
+      onClick={
+        onClick
+      }
+      className="users-kpi"
+      style={{
+        ...styles.kpiCard,
+
+        cursor:
+          onClick
+            ? "pointer"
+            : "default",
+
+        borderColor:
+          active
+            ? COLORS.green
+            : COLORS.border,
+
+        background:
+          active
+            ? "#F5FAF5"
+            : COLORS.surface,
+      }}
+    >
+      <div
+        style={
+          styles.kpiTop
+        }
+      >
+        <div
+          style={{
+            ...styles.kpiIcon,
+
+            background:
+              iconBackground,
+
+            color,
+          }}
+        >
+          {icon}
+        </div>
+
+        {active ? (
+          <div
+            style={
+              styles.activeBadge
+            }
+          >
+            ATIVO
+          </div>
+        ) : null}
+      </div>
+
+      <div
+        style={
+          styles.kpiTitle
+        }
+      >
         {title}
       </div>
 
       <div
         style={{
-          ...kpiValue,
-          color:
-            color ||
-            "#14532D",
+          ...styles.kpiValue,
+          color,
         }}
       >
-        {value}
+        {typeof value ===
+        "number"
+          ? value.toLocaleString(
+              "pt-BR"
+            )
+          : value}
       </div>
-    </div>
+
+      {onClick ? (
+        <div
+          style={
+            styles.kpiFooter
+          }
+        >
+          Filtrar
+          <span>→</span>
+        </div>
+      ) : null}
+    </Component>
   );
 }
+
+/* =========================================================
+   CIDADE
+========================================================= */
 
 function CityCard({
   city,
@@ -797,29 +1992,352 @@ function CityCard({
 }) {
   return (
     <button
-      onClick={onClick}
+      type="button"
+      onClick={
+        onClick
+      }
+      className="users-city-card"
       style={{
-        ...cityCard,
+        ...styles.cityCard,
 
-        border: active
-          ? "1px solid #16A34A"
-          : "1px solid #E5E7EB",
+        borderColor:
+          active
+            ? COLORS.green
+            : COLORS.border,
 
-        background: active
-          ? "#ECFDF5"
-          : "#FFFFFF",
+        background:
+          active
+            ? COLORS.greenSoft
+            : COLORS.surface,
       }}
     >
-      <div style={cityCardName}>
+      <div
+        style={
+          styles.cityCardTop
+        }
+      >
+        <span
+          style={
+            styles.cityPin
+          }
+        >
+          📍
+        </span>
+
+        {active ? (
+          <span
+            style={
+              styles.citySelected
+            }
+          >
+            ✓
+          </span>
+        ) : null}
+      </div>
+
+      <div
+        style={
+          styles.cityCardName
+        }
+      >
         {city}
       </div>
 
-      <div style={cityCardCount}>
-        {count}
+      <div
+        style={
+          styles.cityCardCount
+        }
+      >
+        {count.toLocaleString(
+          "pt-BR"
+        )}
+      </div>
+
+      <div
+        style={
+          styles.cityCardLabel
+        }
+      >
+        {count === 1
+          ? "usuário"
+          : "usuários"}
       </div>
     </button>
   );
 }
+
+/* =========================================================
+   IDENTIDADE
+========================================================= */
+
+function UserIdentity({
+  user,
+}) {
+  const initial =
+    String(
+      user?.name ||
+        user?.email ||
+        "U"
+    )
+      .trim()
+      .charAt(0)
+      .toUpperCase();
+
+  return (
+    <div
+      style={
+        styles.userIdentity
+      }
+    >
+      <div
+        style={
+          styles.avatar
+        }
+      >
+        {initial}
+      </div>
+
+      <div
+        style={
+          styles.userIdentityText
+        }
+      >
+        <div
+          style={
+            styles.userName
+          }
+        >
+          {user.name ||
+            "Sem nome"}
+        </div>
+
+        <div
+          style={
+            styles.email
+          }
+        >
+          {user.email ||
+            "Email não informado"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   TIPO
+========================================================= */
+
+function RoleBadge({
+  user,
+}) {
+  const label =
+    formatRole(user);
+
+  let color =
+    COLORS.green;
+
+  let background =
+    COLORS.greenSoft;
+
+  if (
+    label ===
+    "Cliente"
+  ) {
+    color =
+      COLORS.blue;
+
+    background =
+      COLORS.blueSoft;
+  }
+
+  if (
+    label ===
+    "Cliente + Prestador"
+  ) {
+    color =
+      COLORS.purple;
+
+    background =
+      COLORS.purpleSoft;
+  }
+
+  if (
+    label ===
+    "Motorista"
+  ) {
+    color =
+      COLORS.orangeDark;
+
+    background =
+      COLORS.orangeSoft;
+  }
+
+  if (
+    label ===
+    "Admin"
+  ) {
+    color =
+      "#7C2D12";
+
+    background =
+      "#FFF7ED";
+  }
+
+  if (
+    label ===
+    "Empresa"
+  ) {
+    color =
+      COLORS.greenDark;
+
+    background =
+      "#E8F4E9";
+  }
+
+  return (
+    <span
+      style={{
+        ...styles.roleBadge,
+        color,
+        background,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function StatusBadge({
+  status,
+}) {
+  const blocked =
+    status ===
+    "blocked";
+
+  return (
+    <span
+      style={{
+        ...styles.statusBadge,
+
+        background:
+          blocked
+            ? COLORS.redSoft
+            : COLORS.greenSoft,
+
+        color:
+          blocked
+            ? COLORS.red
+            : COLORS.green,
+      }}
+    >
+      <span
+        style={{
+          ...styles.statusDot,
+
+          background:
+            blocked
+              ? COLORS.red
+              : "#22C55E",
+        }}
+      />
+
+      {blocked
+        ? "Bloqueado"
+        : "Ativo"}
+    </span>
+  );
+}
+
+/* =========================================================
+   ACESSO PROFISSIONAL
+========================================================= */
+
+function AccessBadge({
+  user,
+}) {
+  const access =
+    getAccessState(
+      user
+    );
+
+  if (
+    access.type ===
+    "none"
+  ) {
+    return (
+      <span
+        style={
+          styles.accessNeutral
+        }
+      >
+        —
+      </span>
+    );
+  }
+
+  const palette = {
+    active: {
+      color:
+        COLORS.green,
+
+      background:
+        COLORS.greenSoft,
+    },
+
+    expired: {
+      color:
+        COLORS.red,
+
+      background:
+        COLORS.redSoft,
+    },
+
+    noaccess: {
+      color:
+        COLORS.yellow,
+
+      background:
+        COLORS.yellowSoft,
+    },
+
+    unknown: {
+      color:
+        COLORS.muted,
+
+      background:
+        "#F3F4F6",
+    },
+  };
+
+  const theme =
+    palette[
+      access.type
+    ] ||
+    palette.unknown;
+
+  return (
+    <span
+      style={{
+        ...styles.accessBadge,
+        color:
+          theme.color,
+        background:
+          theme.background,
+      }}
+    >
+      {access.label}
+    </span>
+  );
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
 
 function Th({
   children,
@@ -828,10 +2346,11 @@ function Th({
   return (
     <th
       style={{
+        ...styles.th,
+
         textAlign:
-          align || "left",
-        padding: 12,
-        whiteSpace: "nowrap",
+          align ||
+          "left",
       }}
     >
       {children}
@@ -846,11 +2365,11 @@ function Td({
   return (
     <td
       style={{
-        padding: 12,
+        ...styles.td,
+
         textAlign:
-          align || "left",
-        verticalAlign:
-          "middle",
+          align ||
+          "left",
       }}
     >
       {children}
@@ -858,232 +2377,1777 @@ function Td({
   );
 }
 
-function Badge({
-  children,
-}) {
+/* =========================================================
+   HELPERS DE LOCALIZAÇÃO
+========================================================= */
+
+function getUserCity(
+  user
+) {
   return (
-    <span style={badge}>
-      {children}
-    </span>
+    user?.cidade ||
+    user
+      ?.enderecoSelecionado
+      ?.cidade ||
+    user?.enderecos?.[0]
+      ?.cidade ||
+    "Não informada"
   );
 }
 
-function Status({
-  status,
-}) {
-  const blocked =
-    status === "blocked";
+function getUserState(
+  user
+) {
+  return (
+    user?.estado ||
+    user
+      ?.enderecoSelecionado
+      ?.estado ||
+    user?.enderecos?.[0]
+      ?.estado ||
+    ""
+  );
+}
+
+function normalizeText(
+  value
+) {
+  return String(
+    value || ""
+  )
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .replace(
+      /[\/\\_-]+/g,
+      " "
+    )
+    .replace(
+      /\s+/g,
+      " "
+    )
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeCity(
+  value
+) {
+  let city =
+    normalizeText(
+      value
+    );
+
+  city = city
+    .replace(
+      /\s*[-/]\s*[a-z]{2}\s*$/i,
+      ""
+    )
+    .replace(
+      /\s*,\s*[a-z]{2}\s*$/i,
+      ""
+    )
+    .trim();
+
+  return city;
+}
+
+function normalizeState(
+  value
+) {
+  return normalizeText(
+    value
+  )
+    .replace(
+      /[^a-z]/g,
+      ""
+    )
+    .slice(0, 2);
+}
+
+function formatCityName(
+  value
+) {
+  const normalized =
+    normalizeCity(
+      value
+    );
+
+  if (!normalized) {
+    return "Não informada";
+  }
+
+  return normalized
+    .split(" ")
+    .map((word) => {
+      if (!word) {
+        return "";
+      }
+
+      return (
+        word
+          .charAt(0)
+          .toUpperCase() +
+        word.slice(1)
+      );
+    })
+    .join(" ");
+}
+
+function formatStateName(
+  value
+) {
+  const state =
+    normalizeState(
+      value
+    );
+
+  return state.toUpperCase();
+}
+
+/* =========================================================
+   PERFIL
+========================================================= */
+
+function formatRole(
+  user
+) {
+  if (
+    user.role ===
+      "cliente" &&
+    user.temPerfilProfissional
+  ) {
+    return "Cliente + Prestador";
+  }
+
+  const roles = {
+    profissional:
+      "Prestador",
+
+    cliente:
+      "Cliente",
+
+    empresa:
+      "Empresa",
+
+    motorista:
+      "Motorista",
+
+    admin:
+      "Admin",
+  };
 
   return (
-    <span
-      style={{
-        fontWeight: 700,
-
-        color: blocked
-          ? "#DC2626"
-          : "#16A34A",
-      }}
-    >
-      {blocked
-        ? "Bloqueado"
-        : "Ativo"}
-    </span>
+    roles[user.role] ||
+    user.role ||
+    "—"
   );
 }
 
 /* =========================================================
-   STYLES
+   ACESSO
 ========================================================= */
 
-const kpiGrid = {
-  display: "grid",
-  gridTemplateColumns:
-    "repeat(auto-fit, minmax(150px, 1fr))",
-  gap: 12,
-  marginBottom: 16,
-};
+function getAccessState(
+  user
+) {
+  const hasProfessionalProfile =
+    user.role ===
+      "profissional" ||
+    user.temPerfilProfissional ===
+      true;
 
-const kpiTitle = {
-  fontSize: 12,
-  color: "#6B7280",
-};
+  if (
+    !hasProfessionalProfile
+  ) {
+    return {
+      type: "none",
+      label: "—",
+    };
+  }
 
-const kpiValue = {
-  fontSize: 22,
-  fontWeight: 900,
-};
+  if (
+    !user.acessoExpiraEm
+  ) {
+    return {
+      type: "noaccess",
+      label: "Sem acesso",
+    };
+  }
 
-const citySection = {
-  background: "#FFFFFF",
-  borderRadius: 16,
-  padding: 20,
-  border: "1px solid #E5E7EB",
-  marginBottom: 16,
-};
+  const expiration =
+    new Date(
+      user.acessoExpiraEm
+    );
 
-const cityHeader = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 12,
-  marginBottom: 16,
-};
-const cityHeaderActions = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  flexWrap: "wrap",
-};
+  if (
+    Number.isNaN(
+      expiration.getTime()
+    )
+  ) {
+    return {
+      type: "unknown",
+      label: "Indefinido",
+    };
+  }
 
-const expandCityButton = {
-  border: "none",
-  background: "#14532D",
-  color: "#FFFFFF",
-  padding: "8px 14px",
-  borderRadius: 8,
-  cursor: "pointer",
-  fontWeight: 700,
-};
-const cityTitle = {
-  margin: 0,
-  color: "#14532D",
-  fontSize: 17,
-};
+  if (
+    expiration <
+    new Date()
+  ) {
+    return {
+      type: "expired",
+      label: "Expirado",
+    };
+  }
 
-const citySubtitle = {
-  marginTop: 4,
-  color: "#6B7280",
-  fontSize: 12,
-};
+  return {
+    type: "active",
 
-const cityCards = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: 10,
-};
+    label:
+      `Até ${expiration.toLocaleDateString(
+        "pt-BR"
+      )}`,
+  };
+}
 
-const cityCard = {
-  minWidth: 130,
-  padding: "10px 14px",
-  borderRadius: 10,
-  cursor: "pointer",
-  textAlign: "left",
-};
+/* =========================================================
+   DATA
+========================================================= */
 
-const cityCardName = {
-  color: "#374151",
-  fontSize: 12,
-  fontWeight: 700,
-};
+function formatDate(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
 
-const cityCardCount = {
-  marginTop: 4,
-  color: "#14532D",
-  fontSize: 20,
-  fontWeight: 900,
-};
+  const date =
+    new Date(
+      value
+    );
 
-const clearCityButton = {
-  border: "none",
-  background: "#F3F4F6",
-  padding: "8px 12px",
-  borderRadius: 8,
-  cursor: "pointer",
-  color: "#374151",
-  fontWeight: 700,
-};
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
 
-const card = {
-  background: "#fff",
-  borderRadius: 16,
-  padding: 20,
-  border: "1px solid #E5E7EB",
-};
+  return date.toLocaleDateString(
+    "pt-BR"
+  );
+}
 
-const toolbar = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 12,
-  flexWrap: "wrap",
-  marginBottom: 12,
-};
+function formatTime(
+  date
+) {
+  if (!date) {
+    return "";
+  }
 
-const filterGroup = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-};
+  return date.toLocaleTimeString(
+    "pt-BR",
+    {
+      hour:
+        "2-digit",
 
-const input = {
-  flex: "1 1 280px",
-  padding: 9,
-  borderRadius: 8,
-  border: "1px solid #E5E7EB",
-};
+      minute:
+        "2-digit",
+    }
+  );
+}
 
-const select = {
-  padding: 9,
-  borderRadius: 8,
-  border: "1px solid #E5E7EB",
-  background: "#FFFFFF",
-};
+/* =========================================================
+   ESTILOS
+========================================================= */
 
-const resultInfo = {
-  marginBottom: 12,
-  color: "#6B7280",
-  fontSize: 12,
-};
+const styles = {
+  /* =======================================================
+     FUNDO
+  ======================================================= */
 
-const tableScroll = {
-  overflowX: "auto",
-};
+  dashboardShell: {
+    background:
+      COLORS.background,
 
-const table = {
-  width: "100%",
-  minWidth: 850,
-  borderCollapse: "collapse",
-};
+    borderRadius: 28,
 
-const row = {
-  borderTop: "1px solid #E5E7EB",
-};
+    padding: 20,
 
-const badge = {
-  background: "#F1F5F9",
-  padding: "4px 10px",
-  borderRadius: 999,
-  fontSize: 12,
-  fontWeight: 700,
-};
+    boxSizing:
+      "border-box",
+  },
 
-const btn = {
-  background: "#14532D",
-  color: "#fff",
-  border: "none",
-  padding: "6px 14px",
-  borderRadius: 8,
-  cursor: "pointer",
-};
+  /* =======================================================
+     LOADING
+  ======================================================= */
 
-const email = {
-  fontSize: 12,
-  color: "#6B7280",
-};
+  loadingRoot: {
+    minHeight: 380,
 
-const cityName = {
-  fontWeight: 700,
-  color: "#111827",
-};
+    display: "flex",
+    flexDirection:
+      "column",
 
-const stateName = {
-  marginTop: 2,
-  fontSize: 11,
-  color: "#6B7280",
-};
+    alignItems:
+      "center",
 
-const empty = {
-  padding: 24,
-  textAlign: "center",
-  color: "#6B7280",
+    justifyContent:
+      "center",
+
+    padding: 30,
+
+    borderRadius: 24,
+
+    background:
+      COLORS.background,
+  },
+
+  loadingSpinner: {
+    width: 36,
+    height: 36,
+
+    marginBottom: 14,
+
+    borderRadius:
+      "50%",
+
+    border:
+      `4px solid ${COLORS.border}`,
+
+    borderTopColor:
+      COLORS.orange,
+
+    animation:
+      "usersSpin 800ms linear infinite",
+  },
+
+  loadingTitle: {
+    fontSize: 17,
+
+    fontWeight: 900,
+
+    color:
+      COLORS.greenDark,
+  },
+
+  loadingText: {
+    marginTop: 5,
+
+    fontSize: 12,
+
+    color:
+      COLORS.muted,
+  },
+
+  /* =======================================================
+     HERO
+  ======================================================= */
+
+  hero: {
+    position:
+      "relative",
+
+    overflow:
+      "hidden",
+
+    marginBottom: 20,
+
+    padding: 26,
+
+    borderRadius: 24,
+
+    background:
+      "linear-gradient(135deg, #203D24 0%, #2E4F2F 58%, #3C633D 100%)",
+
+    boxShadow:
+      "0 14px 36px rgba(31, 55, 34, 0.14)",
+
+    color:
+      "#FFFFFF",
+  },
+
+  heroTop: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "space-between",
+
+    gap: 20,
+  },
+
+  heroEyebrow: {
+    marginBottom: 4,
+
+    fontSize: 10,
+
+    fontWeight: 900,
+
+    letterSpacing: 1.2,
+
+    color:
+      "#BFD3C0",
+  },
+
+  heroTitle: {
+    fontSize: 28,
+
+    lineHeight: 1.15,
+
+    fontWeight: 900,
+
+    color:
+      "#FFFFFF",
+  },
+
+  heroSubtitle: {
+    maxWidth: 650,
+
+    marginTop: 7,
+
+    fontSize: 13,
+
+    lineHeight: 1.55,
+
+    color:
+      "#D7E4D8",
+  },
+
+  heroActions: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    gap: 8,
+  },
+
+  refreshButton: {
+    height: 42,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    gap: 7,
+
+    padding:
+      "0 15px",
+
+    border: "none",
+
+    borderRadius: 12,
+
+    background:
+      COLORS.orange,
+
+    color:
+      "#FFFFFF",
+
+    fontSize: 12,
+
+    fontWeight: 900,
+
+    cursor:
+      "pointer",
+  },
+
+  syncRow: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    gap: 7,
+
+    marginTop: 16,
+
+    fontSize: 11,
+
+    color:
+      "#D4E1D5",
+  },
+
+  liveDot: {
+    width: 8,
+    height: 8,
+
+    borderRadius:
+      "50%",
+
+    background:
+      "#66DB84",
+
+    boxShadow:
+      "0 0 0 4px rgba(102,219,132,.13)",
+  },
+
+  heroStats: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(4, minmax(0, 1fr))",
+
+    gap: 10,
+
+    marginTop: 20,
+  },
+
+  heroStat: {
+    padding: 13,
+
+    borderRadius: 15,
+
+    background:
+      "rgba(255,255,255,0.08)",
+
+    border:
+      "1px solid rgba(255,255,255,0.11)",
+
+    backdropFilter:
+      "blur(10px)",
+  },
+
+  heroStatLabel: {
+    fontSize: 10,
+
+    fontWeight: 700,
+
+    color:
+      "#CADACA",
+  },
+
+  heroStatValue: {
+    marginTop: 3,
+
+    fontSize: 21,
+
+    lineHeight: 1.2,
+
+    fontWeight: 900,
+
+    color:
+      "#FFFFFF",
+  },
+
+  /* =======================================================
+     ERRO
+  ======================================================= */
+
+  errorBox: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "space-between",
+
+    gap: 14,
+
+    marginBottom: 20,
+
+    padding: 14,
+
+    borderRadius: 14,
+
+    background:
+      COLORS.redSoft,
+
+    border:
+      "1px solid #FECACA",
+  },
+
+  errorLeft: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    gap: 10,
+  },
+
+  errorIcon: {
+    width: 36,
+    height: 36,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    flexShrink: 0,
+
+    borderRadius: 11,
+
+    background:
+      "#FEE2E2",
+
+    color:
+      COLORS.red,
+
+    fontWeight: 900,
+  },
+
+  errorTitle: {
+    fontSize: 13,
+
+    fontWeight: 900,
+
+    color:
+      "#991B1B",
+  },
+
+  errorText: {
+    marginTop: 2,
+
+    fontSize: 11,
+
+    color:
+      "#B45353",
+  },
+
+  errorButton: {
+    height: 36,
+
+    padding:
+      "0 13px",
+
+    border: "none",
+
+    borderRadius: 10,
+
+    background:
+      COLORS.red,
+
+    color:
+      "#FFFFFF",
+
+    fontSize: 11,
+
+    fontWeight: 800,
+
+    cursor:
+      "pointer",
+  },
+
+  /* =======================================================
+     SEÇÕES
+  ======================================================= */
+
+  section: {
+    marginTop: 28,
+  },
+
+  heading: {
+    marginBottom: 13,
+  },
+
+  sectionEyebrow: {
+    marginBottom: 3,
+
+    fontSize: 10,
+
+    fontWeight: 900,
+
+    letterSpacing: 0.8,
+
+    color:
+      COLORS.orangeDark,
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+
+    lineHeight: 1.25,
+
+    fontWeight: 900,
+
+    color:
+      COLORS.greenDark,
+  },
+
+  sectionDescription: {
+    marginTop: 4,
+
+    fontSize: 11,
+
+    lineHeight: 1.5,
+
+    color:
+      COLORS.muted,
+  },
+
+  /* =======================================================
+     KPIs
+  ======================================================= */
+
+  kpiCard: {
+    minHeight: 150,
+
+    display: "flex",
+
+    flexDirection:
+      "column",
+
+    padding: 16,
+
+    borderRadius: 17,
+
+    border:
+      `1px solid ${COLORS.border}`,
+
+    textAlign: "left",
+
+    color:
+      "inherit",
+
+    fontFamily:
+      "inherit",
+  },
+
+  kpiTop: {
+    minHeight: 40,
+
+    display: "flex",
+
+    alignItems:
+      "flex-start",
+
+    justifyContent:
+      "space-between",
+
+    marginBottom: 12,
+  },
+
+  kpiIcon: {
+    width: 40,
+    height: 40,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    borderRadius: 12,
+
+    fontSize: 17,
+
+    fontWeight: 900,
+  },
+
+  activeBadge: {
+    padding:
+      "5px 7px",
+
+    borderRadius: 999,
+
+    background:
+      COLORS.greenSoft,
+
+    color:
+      COLORS.green,
+
+    fontSize: 8,
+
+    fontWeight: 900,
+
+    letterSpacing: 0.5,
+  },
+
+  kpiTitle: {
+    fontSize: 11,
+
+    lineHeight: 1.4,
+
+    fontWeight: 800,
+
+    color:
+      COLORS.muted,
+  },
+
+  kpiValue: {
+    marginTop: 3,
+
+    fontSize: 25,
+
+    lineHeight: 1.25,
+
+    fontWeight: 900,
+
+    letterSpacing:
+      -0.4,
+  },
+
+  kpiFooter: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "space-between",
+
+    marginTop:
+      "auto",
+
+    paddingTop: 10,
+
+    borderTop:
+      `1px solid ${COLORS.borderSoft}`,
+
+    fontSize: 10,
+
+    fontWeight: 800,
+
+    color:
+      COLORS.green,
+  },
+
+  /* =======================================================
+     CIDADES
+  ======================================================= */
+
+  cityHeader: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "space-between",
+
+    gap: 12,
+
+    marginBottom: 12,
+  },
+
+  cityHeaderActions: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    flexWrap:
+      "wrap",
+
+    gap: 8,
+  },
+
+  cityExpandButton: {
+    height: 38,
+
+    padding:
+      "0 14px",
+
+    border: "none",
+
+    borderRadius: 11,
+
+    background:
+      COLORS.green,
+
+    color:
+      "#FFFFFF",
+
+    cursor:
+      "pointer",
+
+    fontSize: 11,
+
+    fontWeight: 800,
+  },
+
+  secondaryButton: {
+    height: 38,
+
+    padding:
+      "0 13px",
+
+    border:
+      `1px solid ${COLORS.border}`,
+
+    borderRadius: 11,
+
+    background:
+      COLORS.surface,
+
+    color:
+      COLORS.green,
+
+    cursor:
+      "pointer",
+
+    fontSize: 11,
+
+    fontWeight: 800,
+  },
+
+  cityCards: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(auto-fill, minmax(150px, 1fr))",
+
+    gap: 10,
+  },
+
+  cityCard: {
+    minHeight: 128,
+
+    padding: 13,
+
+    borderRadius: 15,
+
+    border:
+      `1px solid ${COLORS.border}`,
+
+    textAlign: "left",
+
+    cursor:
+      "pointer",
+
+    fontFamily:
+      "inherit",
+  },
+
+  cityCardTop: {
+    height: 27,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "space-between",
+  },
+
+  cityPin: {
+    fontSize: 15,
+  },
+
+  citySelected: {
+    width: 23,
+    height: 23,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    borderRadius:
+      "50%",
+
+    background:
+      COLORS.green,
+
+    color:
+      "#FFFFFF",
+
+    fontSize: 10,
+
+    fontWeight: 900,
+  },
+
+  cityCardName: {
+    marginTop: 7,
+
+    fontSize: 12,
+
+    lineHeight: 1.4,
+
+    fontWeight: 800,
+
+    color:
+      COLORS.text,
+  },
+
+  cityCardCount: {
+    marginTop: 6,
+
+    fontSize: 22,
+
+    fontWeight: 900,
+
+    color:
+      COLORS.greenDark,
+  },
+
+  cityCardLabel: {
+    marginTop: 1,
+
+    fontSize: 9,
+
+    color:
+      COLORS.muted,
+  },
+
+  cityPreview: {
+    minHeight: 82,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    gap: 12,
+
+    padding: 14,
+
+    borderRadius: 15,
+
+    background:
+      COLORS.surface,
+
+    border:
+      `1px solid ${COLORS.border}`,
+  },
+
+  cityPreviewIcon: {
+    width: 44,
+    height: 44,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    flexShrink: 0,
+
+    borderRadius: 13,
+
+    background:
+      COLORS.orangeSoft,
+
+    fontSize: 18,
+  },
+
+  cityPreviewTitle: {
+    fontSize: 13,
+
+    fontWeight: 900,
+
+    color:
+      COLORS.greenDark,
+  },
+
+  cityPreviewText: {
+    marginTop: 3,
+
+    fontSize: 10,
+
+    color:
+      COLORS.muted,
+  },
+
+  /* =======================================================
+     LISTA
+  ======================================================= */
+
+  listCard: {
+    overflow:
+      "hidden",
+
+    marginTop: 12,
+
+    borderRadius: 18,
+
+    background:
+      COLORS.surface,
+
+    border:
+      `1px solid ${COLORS.border}`,
+  },
+
+  toolbar: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "space-between",
+
+    gap: 12,
+
+    flexWrap:
+      "wrap",
+
+    padding: 16,
+
+    borderBottom:
+      `1px solid ${COLORS.borderSoft}`,
+  },
+
+  searchWrapper: {
+    position:
+      "relative",
+
+    flex:
+      "1 1 340px",
+
+    minWidth: 260,
+  },
+
+  searchIcon: {
+    position:
+      "absolute",
+
+    left: 12,
+
+    top: "50%",
+
+    transform:
+      "translateY(-50%)",
+
+    zIndex: 2,
+
+    color:
+      COLORS.orange,
+
+    fontSize: 18,
+
+    pointerEvents:
+      "none",
+  },
+
+  input: {
+    width: "100%",
+
+    height: 42,
+
+    boxSizing:
+      "border-box",
+
+    padding:
+      "0 38px 0 38px",
+
+    border:
+      `1px solid ${COLORS.border}`,
+
+    borderRadius: 12,
+
+    background:
+      "#FAFCFA",
+
+    color:
+      COLORS.text,
+
+    fontSize: 12,
+
+    transition:
+      "border-color 150ms ease, box-shadow 150ms ease",
+  },
+
+  clearSearch: {
+    position:
+      "absolute",
+
+    right: 9,
+
+    top: "50%",
+
+    transform:
+      "translateY(-50%)",
+
+    width: 26,
+    height: 26,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    border: "none",
+
+    borderRadius: 8,
+
+    background:
+      COLORS.greenSoft,
+
+    color:
+      COLORS.green,
+
+    cursor:
+      "pointer",
+
+    fontSize: 17,
+  },
+
+  filterGroup: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    gap: 8,
+
+    flexWrap:
+      "wrap",
+  },
+
+  select: {
+    height: 42,
+
+    padding:
+      "0 11px",
+
+    border:
+      `1px solid ${COLORS.border}`,
+
+    borderRadius: 11,
+
+    background:
+      "#FFFFFF",
+
+    color:
+      COLORS.text,
+
+    cursor:
+      "pointer",
+
+    fontSize: 11,
+
+    transition:
+      "border-color 150ms ease, box-shadow 150ms ease",
+  },
+
+  clearFiltersButton: {
+    height: 42,
+
+    padding:
+      "0 12px",
+
+    border:
+      `1px solid ${COLORS.border}`,
+
+    borderRadius: 11,
+
+    background:
+      COLORS.greenSoft,
+
+    color:
+      COLORS.green,
+
+    cursor:
+      "pointer",
+
+    fontSize: 10,
+
+    fontWeight: 800,
+  },
+
+  resultBar: {
+    minHeight: 44,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "space-between",
+
+    gap: 10,
+
+    padding:
+      "0 16px",
+
+    background:
+      "#FAFCFA",
+
+    borderBottom:
+      `1px solid ${COLORS.borderSoft}`,
+
+    color:
+      COLORS.muted,
+
+    fontSize: 11,
+  },
+
+  filteredBadge: {
+    padding:
+      "5px 8px",
+
+    borderRadius: 999,
+
+    background:
+      COLORS.orangeSoft,
+
+    color:
+      COLORS.orangeDark,
+
+    fontSize: 9,
+
+    fontWeight: 900,
+  },
+
+  /* =======================================================
+     TABELA
+  ======================================================= */
+
+  tableScroll: {
+    overflowX:
+      "auto",
+  },
+
+  table: {
+    width: "100%",
+
+    minWidth: 960,
+
+    borderCollapse:
+      "collapse",
+  },
+
+  th: {
+    padding:
+      "13px 14px",
+
+    background:
+      "#F5F8F5",
+
+    borderBottom:
+      `1px solid ${COLORS.border}`,
+
+    color:
+      COLORS.muted,
+
+    fontSize: 10,
+
+    fontWeight: 900,
+
+    letterSpacing: 0.3,
+
+    whiteSpace:
+      "nowrap",
+  },
+
+  td: {
+    padding:
+      "13px 14px",
+
+    verticalAlign:
+      "middle",
+  },
+
+  tableRow: {
+    borderTop:
+      `1px solid ${COLORS.borderSoft}`,
+  },
+
+  /* =======================================================
+     IDENTIDADE
+  ======================================================= */
+
+  userIdentity: {
+    minWidth: 200,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    gap: 10,
+  },
+
+  avatar: {
+    width: 38,
+    height: 38,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    flexShrink: 0,
+
+    borderRadius: 12,
+
+    background:
+      COLORS.greenSoft,
+
+    color:
+      COLORS.green,
+
+    fontSize: 14,
+
+    fontWeight: 900,
+  },
+
+  userIdentityText: {
+    minWidth: 0,
+  },
+
+  userName: {
+    maxWidth: 210,
+
+    overflow:
+      "hidden",
+
+    textOverflow:
+      "ellipsis",
+
+    whiteSpace:
+      "nowrap",
+
+    fontSize: 12,
+
+    fontWeight: 800,
+
+    color:
+      COLORS.text,
+  },
+
+  email: {
+    maxWidth: 220,
+
+    overflow:
+      "hidden",
+
+    textOverflow:
+      "ellipsis",
+
+    whiteSpace:
+      "nowrap",
+
+    marginTop: 2,
+
+    fontSize: 10,
+
+    color:
+      COLORS.muted,
+  },
+
+  /* =======================================================
+     BADGES
+  ======================================================= */
+
+  roleBadge: {
+    display:
+      "inline-flex",
+
+    alignItems:
+      "center",
+
+    minHeight: 27,
+
+    padding:
+      "0 9px",
+
+    borderRadius: 999,
+
+    fontSize: 9,
+
+    fontWeight: 900,
+
+    whiteSpace:
+      "nowrap",
+  },
+
+  statusBadge: {
+    display:
+      "inline-flex",
+
+    alignItems:
+      "center",
+
+    gap: 6,
+
+    minHeight: 27,
+
+    padding:
+      "0 9px",
+
+    borderRadius: 999,
+
+    fontSize: 9,
+
+    fontWeight: 900,
+
+    whiteSpace:
+      "nowrap",
+  },
+
+  statusDot: {
+    width: 6,
+    height: 6,
+
+    borderRadius:
+      "50%",
+  },
+
+  accessBadge: {
+    display:
+      "inline-flex",
+
+    alignItems:
+      "center",
+
+    minHeight: 27,
+
+    padding:
+      "0 9px",
+
+    borderRadius: 999,
+
+    fontSize: 9,
+
+    fontWeight: 800,
+
+    whiteSpace:
+      "nowrap",
+  },
+
+  accessNeutral: {
+    color:
+      COLORS.subtle,
+
+    fontSize: 11,
+  },
+
+  /* =======================================================
+     CIDADE DA TABELA
+  ======================================================= */
+
+  cityCell: {
+    display: "flex",
+
+    alignItems:
+      "flex-start",
+
+    gap: 6,
+  },
+
+  cityName: {
+    maxWidth: 160,
+
+    fontSize: 11,
+
+    fontWeight: 800,
+
+    color:
+      COLORS.text,
+  },
+
+  stateName: {
+    marginTop: 1,
+
+    fontSize: 9,
+
+    color:
+      COLORS.muted,
+  },
+
+  dateText: {
+    fontSize: 10,
+
+    color:
+      COLORS.muted,
+
+    whiteSpace:
+      "nowrap",
+  },
+
+  detailsButton: {
+    height: 34,
+
+    display: "inline-flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    gap: 7,
+
+    padding:
+      "0 11px",
+
+    border: "none",
+
+    borderRadius: 10,
+
+    background:
+      COLORS.green,
+
+    color:
+      "#FFFFFF",
+
+    cursor:
+      "pointer",
+
+    fontSize: 10,
+
+    fontWeight: 800,
+  },
+
+  /* =======================================================
+     VAZIO
+  ======================================================= */
+
+  emptyState: {
+    display: "flex",
+
+    flexDirection:
+      "column",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    padding:
+      "42px 20px",
+
+    textAlign:
+      "center",
+
+    borderTop:
+      `1px solid ${COLORS.borderSoft}`,
+  },
+
+  emptyIcon: {
+    width: 50,
+    height: 50,
+
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "center",
+
+    borderRadius: 15,
+
+    background:
+      COLORS.orangeSoft,
+
+    color:
+      COLORS.orange,
+
+    fontSize: 24,
+  },
+
+  emptyTitle: {
+    marginTop: 11,
+
+    fontSize: 14,
+
+    fontWeight: 900,
+
+    color:
+      COLORS.greenDark,
+  },
+
+  emptyText: {
+    maxWidth: 380,
+
+    marginTop: 4,
+
+    fontSize: 11,
+
+    lineHeight: 1.5,
+
+    color:
+      COLORS.muted,
+  },
+
+  emptyButton: {
+    height: 37,
+
+    marginTop: 13,
+
+    padding:
+      "0 14px",
+
+    border: "none",
+
+    borderRadius: 10,
+
+    background:
+      COLORS.green,
+
+    color:
+      "#FFFFFF",
+
+    cursor:
+      "pointer",
+
+    fontSize: 11,
+
+    fontWeight: 800,
+  },
+
+  /* =======================================================
+     FOOTER
+  ======================================================= */
+
+  footer: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    justifyContent:
+      "space-between",
+
+    flexWrap:
+      "wrap",
+
+    gap: 10,
+
+    marginTop: 30,
+
+    paddingTop: 17,
+
+    borderTop:
+      `1px solid ${COLORS.border}`,
+
+    color:
+      COLORS.muted,
+
+    fontSize: 10,
+  },
+
+  footerDot: {
+    margin:
+      "0 7px",
+
+    color:
+      COLORS.subtle,
+  },
 };

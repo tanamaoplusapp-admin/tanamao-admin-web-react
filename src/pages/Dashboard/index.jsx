@@ -18,33 +18,22 @@ import logo from "../../assets/adaptive-icon.png";
 const COLORS = {
   green: "#2E4F2F",
   greenDark: "#1D3A22",
-  greenSoft: "#EEF5EE",
+  greenSoft: "#E7F0E7",
 
   orange: "#FF9900",
   orangeDark: "#A85A00",
-  orangeSoft: "#FFF4E4",
-
-  blue: "#2563EB",
-  blueSoft: "#EFF6FF",
-
-  purple: "#7C3AED",
-  purpleSoft: "#F5F3FF",
-
-  red: "#DC2626",
-  redSoft: "#FEF2F2",
-
-  yellow: "#F59E0B",
-  yellowSoft: "#FFFBEB",
+  orangeSoft: "#FFF1DD",
 
   surface: "#FFFFFF",
-  background: "#F6F8F6",
+
+  background: "#EEF3EE",
 
   text: "#182018",
   muted: "#6B7280",
   subtle: "#9CA3AF",
 
-  border: "#E5EAE5",
-  borderSoft: "#EDF0ED",
+  border: "#DDE5DD",
+  borderSoft: "#E7ECE7",
 };
 
 /* =========================================================
@@ -1150,10 +1139,17 @@ export default function Dashboard() {
       <style>
         {`
           .central-dashboard {
-            width: 100%;
-            max-width: 1600px;
-            margin: 0 auto;
-          }
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+
+  background: #EEF3EE;
+
+  padding: 20px;
+  border-radius: 28px;
+
+  box-sizing: border-box;
+}
 
           .central-main-grid {
             display: grid;
@@ -2793,7 +2789,7 @@ const styles = {
     padding: "10px 0",
 
     background:
-      "rgba(246,248,246,.92)",
+  "rgba(238,243,238,.94)",
 
     backdropFilter:
       "blur(12px)",
