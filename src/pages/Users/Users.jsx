@@ -8,7 +8,14 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import Page from "../../layout/Page";
-import { getUsers } from "../../services/userService";
+
+import {
+  getUsers,
+} from "../../services/userService";
+
+import {
+  getCentralDashboard,
+} from "../../services/admin";
 
 /* =========================================================
    CORES
@@ -52,27 +59,62 @@ const COLORS = {
 ========================================================= */
 
 export default function Users() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [users, setUsers] = useState([]);
+  const [
+    users,
+    setUsers,
+  ] = useState([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  /*
+   * NÚMEROS OFICIAIS DA CENTRAL.
+   *
+   * Esses dados vêm da mesma chamada usada
+   * pela dashboard principal.
+   *
+   * Isso corrige o problema em que "Ativos"
+   * repetia o total de usuários.
+   */
+  const [
+    centralUsers,
+    setCentralUsers,
+  ] = useState({
+    total: 0,
+    bloqueados: 0,
 
-  const [error, setError] =
-    useState("");
+    loaded: false,
+  });
 
-  const [lastUpdated, setLastUpdated] =
-    useState(null);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [search, setSearch] =
-    useState("");
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-  const [filter, setFilter] =
-    useState("all");
+  const [
+    lastUpdated,
+    setLastUpdated,
+  ] = useState(null);
 
-  const [cityFilter, setCityFilter] =
-    useState("all");
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+  const [
+    filter,
+    setFilter,
+  ] = useState("all");
+
+  const [
+    cityFilter,
+    setCityFilter,
+  ] = useState("all");
 
   const [
     citiesExpanded,
@@ -80,49 +122,204 @@ export default function Users() {
   ] = useState(false);
 
   /* =========================================================
-     CARREGAR USUÁRIOS
+     CARREGAR DADOS
 
-     ENDPOINT/SERVICE MANTIDO
+     MANTÉM:
+     getUsers()
+
+     ADICIONA:
+     getCentralDashboard()
+
+     para utilizar exatamente os números
+     oficiais da Central.
   ========================================================= */
 
-  const load = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const load =
+    useCallback(async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-      const data =
-        await getUsers();
+        /*
+         * Carregamos lista e dashboard em paralelo.
+         *
+         * Promise.allSettled impede que uma falha
+         * da Central apague uma lista de usuários
+         * que tenha sido carregada corretamente.
+         */
+        const [
+          usersResult,
+          dashboardResult,
+        ] =
+          await Promise.allSettled([
+            getUsers(),
+            getCentralDashboard(),
+          ]);
 
-      const usersData =
-        data?.items ||
-        data?.users ||
-        data ||
-        [];
+        /* =========================================
+           LISTA DE USUÁRIOS
+        ========================================= */
 
-      setUsers(
-        Array.isArray(usersData)
-          ? usersData
-          : []
-      );
+        if (
+          usersResult.status ===
+          "fulfilled"
+        ) {
+          const data =
+            usersResult.value;
 
-      setLastUpdated(
-        new Date()
-      );
-    } catch (error) {
-      console.error(
-        "[Users] Erro ao carregar usuários:",
-        error
-      );
+          const usersData =
+            data?.items ||
+            data?.users ||
+            data?.data?.items ||
+            data?.data?.users ||
+            data?.data ||
+            data ||
+            [];
 
-      setUsers([]);
+          setUsers(
+            Array.isArray(
+              usersData
+            )
+              ? usersData
+              : []
+          );
+        } else {
+          console.error(
+            "[Users] Erro ao carregar usuários:",
+            usersResult.reason
+          );
 
-      setError(
-        "Não foi possível carregar os usuários."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+          setUsers([]);
+
+          setError(
+            "Não foi possível carregar a lista de usuários."
+          );
+        }
+
+        /* =========================================
+           NÚMEROS OFICIAIS DA CENTRAL
+        ========================================= */
+
+        if (
+          dashboardResult.status ===
+          "fulfilled"
+        ) {
+          const response =
+            dashboardResult.value;
+
+          /*
+           * Mesma tolerância usada na Dashboard:
+           *
+           * response
+           * response.data
+           * response.data.data
+           */
+          const dashboardData =
+            response?.data?.data ??
+            response?.data ??
+            response ??
+            {};
+
+          const totalRaw =
+            Number(
+              dashboardData
+                ?.users
+                ?.total ??
+                0
+            );
+
+          const bloqueadosRaw =
+            Number(
+              dashboardData
+                ?.users
+                ?.bloqueados ??
+                dashboardData
+                  ?.users
+                  ?.blocked ??
+                0
+            );
+
+          const total =
+            Number.isFinite(
+              totalRaw
+            )
+              ? Math.max(
+                  0,
+                  totalRaw
+                )
+              : 0;
+
+          const bloqueados =
+            Number.isFinite(
+              bloqueadosRaw
+            )
+              ? Math.max(
+                  0,
+                  bloqueadosRaw
+                )
+              : 0;
+
+          setCentralUsers({
+            total,
+
+            bloqueados:
+              Math.min(
+                bloqueados,
+                total || bloqueados
+              ),
+
+            loaded: true,
+          });
+        } else {
+          console.error(
+            "[Users] Erro ao carregar números da Central:",
+            dashboardResult.reason
+          );
+
+          /*
+           * Não inventamos números oficiais
+           * caso a dashboard falhe.
+           *
+           * A tela ainda consegue mostrar
+           * a lista normalmente.
+           */
+          setCentralUsers({
+            total: 0,
+            bloqueados: 0,
+            loaded: false,
+          });
+
+          setError(
+            (current) =>
+              current ||
+              "A lista foi carregada, mas não foi possível atualizar os indicadores da Central."
+          );
+        }
+
+        setLastUpdated(
+          new Date()
+        );
+      } catch (error) {
+        console.error(
+          "[Users] Erro inesperado:",
+          error
+        );
+
+        setUsers([]);
+
+        setCentralUsers({
+          total: 0,
+          bloqueados: 0,
+          loaded: false,
+        });
+
+        setError(
+          "Não foi possível carregar os usuários."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, []);
 
   useEffect(() => {
     void load();
@@ -140,10 +337,14 @@ export default function Users() {
       users.forEach(
         (user) => {
           const city =
-            getUserCity(user);
+            getUserCity(
+              user
+            );
 
           const state =
-            getUserState(user);
+            getUserState(
+              user
+            );
 
           if (
             !city ||
@@ -197,8 +398,9 @@ export default function Users() {
             );
           }
 
-          map.get(key).count +=
-            1;
+          map.get(
+            key
+          ).count += 1;
         }
       );
 
@@ -236,124 +438,136 @@ export default function Users() {
         );
 
       return users
-        .filter((user) => {
-          if (
-            filter ===
-            "all"
-          ) {
-            return true;
-          }
 
-          if (
-            filter ===
-            "prestador"
-          ) {
-            return (
-              user.role ===
-                "profissional" ||
-              user.temPerfilProfissional ===
-                true
-            );
-          }
+        /* PERFIL / STATUS */
 
-          if (
-            filter ===
-            "cliente"
-          ) {
-            return (
-              user.role ===
+        .filter(
+          (user) => {
+            if (
+              filter ===
+              "all"
+            ) {
+              return true;
+            }
+
+            if (
+              filter ===
+              "prestador"
+            ) {
+              return (
+                user?.role ===
+                  "profissional" ||
+                user?.temPerfilProfissional ===
+                  true
+              );
+            }
+
+            if (
+              filter ===
               "cliente"
-            );
-          }
+            ) {
+              return (
+                user?.role ===
+                "cliente"
+              );
+            }
 
-          if (
-            filter ===
-            "blocked"
-          ) {
-            return (
-              user.status ===
+            if (
+              filter ===
               "blocked"
-            );
-          }
+            ) {
+              return isBlockedUser(
+                user
+              );
+            }
 
-          if (
-            filter ===
-            "active"
-          ) {
-            return (
-              user.status !==
-              "blocked"
-            );
-          }
+            if (
+              filter ===
+              "active"
+            ) {
+              return !isBlockedUser(
+                user
+              );
+            }
 
-          return true;
-        })
-
-        .filter((user) => {
-          if (
-            cityFilter ===
-            "all"
-          ) {
             return true;
           }
+        )
 
-          const city =
-            getUserCity(
-              user
+        /* CIDADE */
+
+        .filter(
+          (user) => {
+            if (
+              cityFilter ===
+              "all"
+            ) {
+              return true;
+            }
+
+            const city =
+              getUserCity(
+                user
+              );
+
+            const state =
+              getUserState(
+                user
+              );
+
+            const key =
+              `${normalizeCity(
+                city
+              )}-${normalizeState(
+                state
+              )}`;
+
+            return (
+              key ===
+              cityFilter
             );
-
-          const state =
-            getUserState(
-              user
-            );
-
-          const key =
-            `${normalizeCity(
-              city
-            )}-${normalizeState(
-              state
-            )}`;
-
-          return (
-            key ===
-            cityFilter
-          );
-        })
-
-        .filter((user) => {
-          if (!term) {
-            return true;
           }
+        )
 
-          const city =
-            getUserCity(
-              user
+        /* BUSCA */
+
+        .filter(
+          (user) => {
+            if (!term) {
+              return true;
+            }
+
+            const city =
+              getUserCity(
+                user
+              );
+
+            const state =
+              getUserState(
+                user
+              );
+
+            return [
+              user?.name,
+              user?.email,
+              user?.role,
+              user?.phone,
+              user?.telefone,
+              city,
+              state,
+              `${city} ${
+                state || ""
+              }`,
+            ].some(
+              (value) =>
+                normalizeText(
+                  value
+                ).includes(
+                  term
+                )
             );
-
-          const state =
-            getUserState(
-              user
-            );
-
-          return [
-            user.name,
-            user.email,
-            user.role,
-            user.phone,
-            user.telefone,
-            city,
-            state,
-            `${city} ${
-              state || ""
-            }`,
-          ].some((value) =>
-            normalizeText(
-              value
-            ).includes(
-              term
-            )
-          );
-        });
+          }
+        );
     }, [
       users,
       filter,
@@ -363,61 +577,85 @@ export default function Users() {
 
   /* =========================================================
      KPIs
+
+     CORREÇÃO PRINCIPAL:
+
+     Antes:
+       active = users.filter(status !== blocked)
+
+     Agora:
+       active = total oficial - bloqueados oficiais
+
+     exatamente com os dados da Central.
   ========================================================= */
 
-  const total =
+  const listTotal =
     users.length;
 
-  const active =
-    users.filter(
-      (user) =>
-        user.status !==
-        "blocked"
-    ).length;
+  const total =
+    centralUsers.loaded
+      ? centralUsers.total
+      : listTotal;
 
   const inactive =
-    users.filter(
-      (user) =>
-        user.status ===
-        "blocked"
-    ).length;
+    centralUsers.loaded
+      ? centralUsers.bloqueados
+      : users.filter(
+          (user) =>
+            isBlockedUser(
+              user
+            )
+        ).length;
+
+  const active =
+    Math.max(
+      0,
+      total -
+        inactive
+    );
+
+  /*
+   * Os demais perfis continuam vindo da
+   * própria lista porque são usados também
+   * para filtros individuais.
+   */
 
   const prestadores =
     users.filter(
       (user) =>
-        user.role ===
+        user?.role ===
           "profissional" ||
-        user.temPerfilProfissional ===
+        user?.temPerfilProfissional ===
           true
     ).length;
 
   const clientes =
     users.filter(
       (user) =>
-        user.role ===
+        user?.role ===
         "cliente"
     ).length;
 
   const clientesPrestadores =
     users.filter(
       (user) =>
-        user.role ===
+        user?.role ===
           "cliente" &&
-        user.temPerfilProfissional ===
+        user?.temPerfilProfissional ===
           true
     ).length;
 
   const motoristas =
     users.filter(
       (user) =>
-        user.role ===
+        user?.role ===
         "motorista"
     ).length;
 
   const empresas =
     users.filter(
       (user) =>
-        user.role ===
+        user?.role ===
         "empresa"
     ).length;
 
@@ -444,16 +682,21 @@ export default function Users() {
 
   const hasFilters =
     filter !== "all" ||
-    cityFilter !== "all" ||
+    cityFilter !==
+      "all" ||
     search.trim().length >
       0;
 
   const clearFilters =
     useCallback(() => {
-      setFilter("all");
+      setFilter(
+        "all"
+      );
+
       setCityFilter(
         "all"
       );
+
       setSearch("");
     }, []);
 
@@ -463,19 +706,25 @@ export default function Users() {
 
   if (
     loading &&
-    users.length === 0
+    users.length ===
+      0
   ) {
     return (
       <Page
         title="Usuários"
         subtitle="Gestão completa de usuários por perfil e cidade"
       >
+        <style>
+          {GLOBAL_CSS}
+        </style>
+
         <div
           style={
             styles.loadingRoot
           }
         >
           <div
+            className="users-loading-spinner"
             style={
               styles.loadingSpinner
             }
@@ -494,257 +743,26 @@ export default function Users() {
               styles.loadingText
             }
           >
-            Organizando a base da plataforma...
+            Organizando a base
+            da plataforma...
           </div>
         </div>
       </Page>
     );
   }
 
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
     <Page
       title="Usuários"
       subtitle="Gestão completa de usuários por perfil e cidade"
     >
-      {/* =====================================================
-          CSS INTERATIVO / RESPONSIVO
-      ===================================================== */}
-
       <style>
-        {`
-          .users-dashboard {
-            width: 100%;
-            max-width: 1600px;
-            margin: 0 auto;
-
-            box-sizing: border-box;
-          }
-
-          .users-kpi-grid {
-            display: grid;
-            grid-template-columns:
-              repeat(
-                4,
-                minmax(0, 1fr)
-              );
-
-            gap: 12px;
-          }
-
-          .users-kpi {
-            transition:
-              transform 170ms ease,
-              box-shadow 170ms ease,
-              border-color 170ms ease;
-          }
-
-          .users-kpi:hover {
-            transform:
-              translateY(-2px);
-
-            box-shadow:
-              0 9px 24px
-              rgba(
-                31,
-                55,
-                34,
-                0.08
-              );
-          }
-
-          .users-city-card {
-            transition:
-              transform 160ms ease,
-              box-shadow 160ms ease,
-              border-color 160ms ease;
-          }
-
-          .users-city-card:hover {
-            transform:
-              translateY(-2px);
-
-            box-shadow:
-              0 7px 18px
-              rgba(
-                31,
-                55,
-                34,
-                0.07
-              );
-          }
-
-          .users-main-button,
-          .users-secondary-button,
-          .users-detail-button {
-            transition:
-              transform 150ms ease,
-              background 150ms ease,
-              box-shadow 150ms ease;
-          }
-
-          .users-main-button:hover,
-          .users-detail-button:hover {
-            transform:
-              translateY(-1px);
-
-            box-shadow:
-              0 5px 14px
-              rgba(
-                46,
-                79,
-                47,
-                0.18
-              );
-          }
-
-          .users-secondary-button:hover {
-            transform:
-              translateY(-1px);
-
-            background:
-              #E7EEE7 !important;
-          }
-
-          .users-table-row {
-            transition:
-              background 130ms ease;
-          }
-
-          .users-table-row:hover {
-            background:
-              #F8FAF8;
-          }
-
-          .users-search-input:focus,
-          .users-filter-select:focus {
-            outline: none;
-
-            border-color:
-              #AFC5B0 !important;
-
-            box-shadow:
-              0 0 0 3px
-              rgba(
-                46,
-                79,
-                47,
-                0.08
-              );
-          }
-
-          .users-refresh-icon {
-            display:
-              inline-block;
-          }
-
-          .users-refresh-icon.loading {
-            animation:
-              usersSpin
-              800ms linear
-              infinite;
-          }
-
-          @keyframes usersSpin {
-            to {
-              transform:
-                rotate(360deg);
-            }
-          }
-
-          @media (
-            max-width: 1100px
-          ) {
-            .users-kpi-grid {
-              grid-template-columns:
-                repeat(
-                  2,
-                  minmax(0, 1fr)
-                );
-            }
-          }
-
-          @media (
-            max-width: 760px
-          ) {
-            .users-dashboard-shell {
-              padding:
-                14px !important;
-
-              border-radius:
-                20px !important;
-            }
-
-            .users-hero {
-              padding:
-                20px !important;
-            }
-
-            .users-hero-top {
-              flex-direction:
-                column;
-
-              align-items:
-                flex-start !important;
-            }
-
-            .users-hero-actions {
-              width: 100%;
-            }
-
-            .users-kpi-grid {
-              grid-template-columns:
-                repeat(
-                  2,
-                  minmax(0, 1fr)
-                );
-            }
-
-            .users-toolbar {
-              align-items:
-                stretch !important;
-
-              flex-direction:
-                column;
-            }
-
-            .users-filter-group {
-              width: 100%;
-            }
-
-            .users-filter-select {
-              flex: 1;
-              min-width:
-                150px;
-            }
-
-            .users-city-header {
-              align-items:
-                flex-start !important;
-
-              flex-direction:
-                column;
-            }
-          }
-
-          @media (
-            max-width: 500px
-          ) {
-            .users-kpi-grid {
-              grid-template-columns:
-                1fr;
-            }
-
-            .users-hero-stats {
-              grid-template-columns:
-                1fr !important;
-            }
-          }
-        `}
+        {GLOBAL_CSS}
       </style>
-
-      {/* =====================================================
-          FUNDO DA ÁREA
-      ===================================================== */}
 
       <div
         className="users-dashboard users-dashboard-shell"
@@ -752,9 +770,9 @@ export default function Users() {
           styles.dashboardShell
         }
       >
-        {/* ===================================================
+        {/* =================================================
             HERO
-        =================================================== */}
+        ================================================= */}
 
         <div
           className="users-hero"
@@ -793,8 +811,8 @@ export default function Users() {
                 Consulte perfis,
                 acompanhe cidades,
                 encontre usuários e
-                monitore a situação da
-                base.
+                monitore a situação
+                da base.
               </div>
             </div>
 
@@ -810,7 +828,9 @@ export default function Users() {
                 style={
                   styles.refreshButton
                 }
-                onClick={load}
+                onClick={
+                  load
+                }
                 disabled={
                   loading
                 }
@@ -832,6 +852,8 @@ export default function Users() {
             </div>
           </div>
 
+          {/* SINCRONIZAÇÃO */}
+
           <div
             style={
               styles.syncRow
@@ -851,6 +873,8 @@ export default function Users() {
                 )}`
               : "Dados carregados"}
           </div>
+
+          {/* KPIS PRINCIPAIS DO HERO */}
 
           <div
             className="users-hero-stats"
@@ -873,9 +897,9 @@ export default function Users() {
             />
 
             <HeroStat
-              label="Cidades"
+              label="Bloqueados"
               value={
-                totalCities
+                inactive
               }
             />
 
@@ -886,9 +910,9 @@ export default function Users() {
           </div>
         </div>
 
-        {/* ===================================================
+        {/* =================================================
             ERRO
-        =================================================== */}
+        ================================================= */}
 
         {error ? (
           <div
@@ -915,7 +939,7 @@ export default function Users() {
                     styles.errorTitle
                   }
                 >
-                  Não foi possível carregar a base
+                  Atenção
                 </div>
 
                 <div
@@ -934,33 +958,42 @@ export default function Users() {
               style={
                 styles.errorButton
               }
-              onClick={load}
+              onClick={
+                load
+              }
             >
               Tentar novamente
             </button>
           </div>
         ) : null}
 
-        {/* ===================================================
-            KPIs
-        =================================================== */}
+        {/* =================================================
+            RESUMO
+        ================================================= */}
 
         <SectionHeading
           eyebrow="VISÃO GERAL"
           title="Resumo da base"
-          description="Clique nos indicadores para aplicar filtros rapidamente."
+          description="Os totais de usuários ativos e bloqueados usam os mesmos números oficiais da Central."
         />
 
         <div
           className="users-kpi-grid"
         >
+          {/* TOTAL */}
+
           <KPI
             icon="👥"
             title="Total de usuários"
-            value={total}
+            value={
+              total
+            }
             active={
               filter ===
-              "all"
+                "all" &&
+              cityFilter ===
+                "all" &&
+              !search.trim()
             }
             color={
               COLORS.greenDark
@@ -968,15 +1001,21 @@ export default function Users() {
             iconBackground={
               COLORS.greenSoft
             }
-            onClick={() =>
-              setFilter("all")
-            }
+            onClick={() => {
+              setFilter(
+                "all"
+              );
+            }}
           />
+
+          {/* ATIVOS - CORRIGIDO */}
 
           <KPI
             icon="✓"
             title="Ativos"
-            value={active}
+            value={
+              active
+            }
             active={
               filter ===
               "active"
@@ -994,10 +1033,14 @@ export default function Users() {
             }
           />
 
+          {/* BLOQUEADOS - OFICIAL */}
+
           <KPI
             icon="!"
             title="Bloqueados"
-            value={inactive}
+            value={
+              inactive
+            }
             active={
               filter ===
               "blocked"
@@ -1015,10 +1058,14 @@ export default function Users() {
             }
           />
 
+          {/* CLIENTES */}
+
           <KPI
             icon="🛍"
             title="Clientes"
-            value={clientes}
+            value={
+              clientes
+            }
             active={
               filter ===
               "cliente"
@@ -1035,6 +1082,8 @@ export default function Users() {
               )
             }
           />
+
+          {/* PRESTADORES */}
 
           <KPI
             icon="🧑‍🔧"
@@ -1059,6 +1108,8 @@ export default function Users() {
             }
           />
 
+          {/* CLIENTE + PRESTADOR */}
+
           <KPI
             icon="↔"
             title="Cliente + Prestador"
@@ -1073,6 +1124,8 @@ export default function Users() {
             }
           />
 
+          {/* MOTORISTAS */}
+
           <KPI
             icon="🚗"
             title="Motoristas"
@@ -1086,6 +1139,8 @@ export default function Users() {
               COLORS.purpleSoft
             }
           />
+
+          {/* EMPRESAS */}
 
           <KPI
             icon="🏢"
@@ -1102,9 +1157,9 @@ export default function Users() {
           />
         </div>
 
-        {/* ===================================================
+        {/* =================================================
             CIDADES
-        =================================================== */}
+        ================================================= */}
 
         <section
           style={
@@ -1140,7 +1195,8 @@ export default function Users() {
                 }
               >
                 {totalCities}{" "}
-                {totalCities === 1
+                {totalCities ===
+                1
                   ? "cidade cadastrada"
                   : "cidades cadastradas"}
 
@@ -1181,7 +1237,9 @@ export default function Users() {
                 }
                 onClick={() =>
                   setCitiesExpanded(
-                    (value) =>
+                    (
+                      value
+                    ) =>
                       !value
                   )
                 }
@@ -1193,6 +1251,8 @@ export default function Users() {
             </div>
           </div>
 
+          {/* CIDADES ABERTAS */}
+
           {citiesExpanded ? (
             <div
               style={
@@ -1202,7 +1262,7 @@ export default function Users() {
               <CityCard
                 city="Todas as cidades"
                 count={
-                  total
+                  listTotal
                 }
                 active={
                   cityFilter ===
@@ -1285,9 +1345,9 @@ export default function Users() {
           )}
         </section>
 
-        {/* ===================================================
+        {/* =================================================
             LISTA
-        =================================================== */}
+        ================================================= */}
 
         <section
           style={
@@ -1306,7 +1366,9 @@ export default function Users() {
               styles.listCard
             }
           >
-            {/* TOOLBAR */}
+            {/* =============================================
+                TOOLBAR
+            ============================================= */}
 
             <div
               className="users-toolbar"
@@ -1314,6 +1376,8 @@ export default function Users() {
                 styles.toolbar
               }
             >
+              {/* BUSCA */}
+
               <div
                 style={
                   styles.searchWrapper
@@ -1337,7 +1401,8 @@ export default function Users() {
                     event
                   ) =>
                     setSearch(
-                      event.target
+                      event
+                        .target
                         .value
                     )
                   }
@@ -1353,7 +1418,9 @@ export default function Users() {
                       styles.clearSearch
                     }
                     onClick={() =>
-                      setSearch("")
+                      setSearch(
+                        ""
+                      )
                     }
                     title="Limpar busca"
                   >
@@ -1362,12 +1429,16 @@ export default function Users() {
                 ) : null}
               </div>
 
+              {/* FILTROS */}
+
               <div
                 className="users-filter-group"
                 style={
                   styles.filterGroup
                 }
               >
+                {/* CIDADE */}
+
                 <select
                   className="users-filter-select"
                   value={
@@ -1377,7 +1448,8 @@ export default function Users() {
                     event
                   ) =>
                     setCityFilter(
-                      event.target
+                      event
+                        .target
                         .value
                     )
                   }
@@ -1409,6 +1481,8 @@ export default function Users() {
                   )}
                 </select>
 
+                {/* PERFIL / STATUS */}
+
                 <select
                   className="users-filter-select"
                   value={
@@ -1418,7 +1492,8 @@ export default function Users() {
                     event
                   ) =>
                     setFilter(
-                      event.target
+                      event
+                        .target
                         .value
                     )
                   }
@@ -1447,6 +1522,8 @@ export default function Users() {
                   </option>
                 </select>
 
+                {/* LIMPAR */}
+
                 {hasFilters ? (
                   <button
                     type="button"
@@ -1464,7 +1541,9 @@ export default function Users() {
               </div>
             </div>
 
-            {/* INFO DO RESULTADO */}
+            {/* =============================================
+                RESULTADOS
+            ============================================= */}
 
             <div
               style={
@@ -1490,9 +1569,11 @@ export default function Users() {
                       COLORS.greenDark,
                   }}
                 >
-                  {total}
+                  {
+                    listTotal
+                  }
                 </strong>{" "}
-                usuários
+                usuários carregados
               </div>
 
               {hasFilters ? (
@@ -1506,7 +1587,9 @@ export default function Users() {
               ) : null}
             </div>
 
-            {/* TABELA */}
+            {/* =============================================
+                TABELA
+            ============================================= */}
 
             <div
               style={
@@ -1552,7 +1635,9 @@ export default function Users() {
 
                 <tbody>
                   {filteredUsers.map(
-                    (user) => (
+                    (
+                      user
+                    ) => (
                       <tr
                         key={
                           user._id
@@ -1626,8 +1711,8 @@ export default function Users() {
 
                         <Td>
                           <StatusBadge
-                            status={
-                              user.status
+                            user={
+                              user
                             }
                           />
                         </Td>
@@ -1642,7 +1727,7 @@ export default function Users() {
                           />
                         </Td>
 
-                        {/* DATA */}
+                        {/* CRIADO */}
 
                         <Td>
                           <div
@@ -1651,12 +1736,13 @@ export default function Users() {
                             }
                           >
                             {formatDate(
-                              user.createdAt
+                              user
+                                .createdAt
                             )}
                           </div>
                         </Td>
 
-                        {/* AÇÕES */}
+                        {/* DETALHES */}
 
                         <Td align="right">
                           <button
@@ -1672,6 +1758,7 @@ export default function Users() {
                             }
                           >
                             Detalhes
+
                             <span>
                               →
                             </span>
@@ -1684,7 +1771,9 @@ export default function Users() {
               </table>
             </div>
 
-            {/* VAZIO */}
+            {/* =============================================
+                ESTADO VAZIO
+            ============================================= */}
 
             {filteredUsers.length ===
             0 ? (
@@ -1714,7 +1803,9 @@ export default function Users() {
                     styles.emptyText
                   }
                 >
-                  Não encontramos usuários com os filtros selecionados.
+                  Não encontramos
+                  usuários com os
+                  filtros selecionados.
                 </div>
 
                 {hasFilters ? (
@@ -1736,9 +1827,9 @@ export default function Users() {
           </div>
         </section>
 
-        {/* ===================================================
+        {/* =================================================
             RODAPÉ
-        =================================================== */}
+        ================================================= */}
 
         <div
           style={
@@ -1973,7 +2064,10 @@ function KPI({
           }
         >
           Filtrar
-          <span>→</span>
+
+          <span>
+            →
+          </span>
         </div>
       ) : null}
     </Component>
@@ -2048,7 +2142,9 @@ function CityCard({
           styles.cityCardCount
         }
       >
-        {count.toLocaleString(
+        {Number(
+          count || 0
+        ).toLocaleString(
           "pt-BR"
         )}
       </div>
@@ -2107,7 +2203,7 @@ function UserIdentity({
             styles.userName
           }
         >
-          {user.name ||
+          {user?.name ||
             "Sem nome"}
         </div>
 
@@ -2116,7 +2212,7 @@ function UserIdentity({
             styles.email
           }
         >
-          {user.email ||
+          {user?.email ||
             "Email não informado"}
         </div>
       </div>
@@ -2125,14 +2221,16 @@ function UserIdentity({
 }
 
 /* =========================================================
-   TIPO
+   TIPO DE PERFIL
 ========================================================= */
 
 function RoleBadge({
   user,
 }) {
   const label =
-    formatRole(user);
+    formatRole(
+      user
+    );
 
   let color =
     COLORS.green;
@@ -2210,14 +2308,18 @@ function RoleBadge({
 
 /* =========================================================
    STATUS
+
+   Mais robusto que:
+   status !== "blocked"
 ========================================================= */
 
 function StatusBadge({
-  status,
+  user,
 }) {
   const blocked =
-    status ===
-    "blocked";
+    isBlockedUser(
+      user
+    );
 
   return (
     <span
@@ -2324,8 +2426,10 @@ function AccessBadge({
     <span
       style={{
         ...styles.accessBadge,
+
         color:
           theme.color,
+
         background:
           theme.background,
       }}
@@ -2336,7 +2440,7 @@ function AccessBadge({
 }
 
 /* =========================================================
-   TABLE
+   TABELA
 ========================================================= */
 
 function Th({
@@ -2378,7 +2482,53 @@ function Td({
 }
 
 /* =========================================================
-   HELPERS DE LOCALIZAÇÃO
+   STATUS DO USUÁRIO
+========================================================= */
+
+function isBlockedUser(
+  user
+) {
+  if (!user) {
+    return false;
+  }
+
+  /*
+   * Principal formato utilizado atualmente.
+   */
+  if (
+    user.status ===
+    "blocked"
+  ) {
+    return true;
+  }
+
+  /*
+   * FallBacks para respostas
+   * diferentes do backend.
+   */
+  if (
+    user.blocked ===
+      true ||
+    user.isBlocked ===
+      true
+  ) {
+    return true;
+  }
+
+  if (
+    user.ativo ===
+      false ||
+    user.active ===
+      false
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/* =========================================================
+   LOCALIZAÇÃO
 ========================================================= */
 
 function getUserCity(
@@ -2389,7 +2539,8 @@ function getUserCity(
     user
       ?.enderecoSelecionado
       ?.cidade ||
-    user?.enderecos?.[0]
+    user
+      ?.enderecos?.[0]
       ?.cidade ||
     "Não informada"
   );
@@ -2403,7 +2554,8 @@ function getUserState(
     user
       ?.enderecoSelecionado
       ?.estado ||
-    user?.enderecos?.[0]
+    user
+      ?.enderecos?.[0]
       ?.estado ||
     ""
   );
@@ -2413,9 +2565,12 @@ function normalizeText(
   value
 ) {
   return String(
-    value || ""
+    value ||
+      ""
   )
-    .normalize("NFD")
+    .normalize(
+      "NFD"
+    )
     .replace(
       /[\u0300-\u036f]/g,
       ""
@@ -2440,16 +2595,17 @@ function normalizeCity(
       value
     );
 
-  city = city
-    .replace(
-      /\s*[-/]\s*[a-z]{2}\s*$/i,
-      ""
-    )
-    .replace(
-      /\s*,\s*[a-z]{2}\s*$/i,
-      ""
-    )
-    .trim();
+  city =
+    city
+      .replace(
+        /\s*[-/]\s*[a-z]{2}\s*$/i,
+        ""
+      )
+      .replace(
+        /\s*,\s*[a-z]{2}\s*$/i,
+        ""
+      )
+      .trim();
 
   return city;
 }
@@ -2464,7 +2620,10 @@ function normalizeState(
       /[^a-z]/g,
       ""
     )
-    .slice(0, 2);
+    .slice(
+      0,
+      2
+    );
 }
 
 function formatCityName(
@@ -2481,30 +2640,29 @@ function formatCityName(
 
   return normalized
     .split(" ")
-    .map((word) => {
-      if (!word) {
-        return "";
-      }
+    .map(
+      (word) => {
+        if (!word) {
+          return "";
+        }
 
-      return (
-        word
-          .charAt(0)
-          .toUpperCase() +
-        word.slice(1)
-      );
-    })
+        return (
+          word
+            .charAt(0)
+            .toUpperCase() +
+          word.slice(1)
+        );
+      }
+    )
     .join(" ");
 }
 
 function formatStateName(
   value
 ) {
-  const state =
-    normalizeState(
-      value
-    );
-
-  return state.toUpperCase();
+  return normalizeState(
+    value
+  ).toUpperCase();
 }
 
 /* =========================================================
@@ -2515,9 +2673,9 @@ function formatRole(
   user
 ) {
   if (
-    user.role ===
+    user?.role ===
       "cliente" &&
-    user.temPerfilProfissional
+    user?.temPerfilProfissional
   ) {
     return "Cliente + Prestador";
   }
@@ -2540,8 +2698,10 @@ function formatRole(
   };
 
   return (
-    roles[user.role] ||
-    user.role ||
+    roles[
+      user?.role
+    ] ||
+    user?.role ||
     "—"
   );
 }
@@ -2554,9 +2714,9 @@ function getAccessState(
   user
 ) {
   const hasProfessionalProfile =
-    user.role ===
+    user?.role ===
       "profissional" ||
-    user.temPerfilProfissional ===
+    user?.temPerfilProfissional ===
       true;
 
   if (
@@ -2569,7 +2729,7 @@ function getAccessState(
   }
 
   if (
-    !user.acessoExpiraEm
+    !user?.acessoExpiraEm
   ) {
     return {
       type: "noaccess",
@@ -2614,7 +2774,7 @@ function getAccessState(
 }
 
 /* =========================================================
-   DATA
+   DATAS
 ========================================================= */
 
 function formatDate(
@@ -2662,13 +2822,255 @@ function formatTime(
 }
 
 /* =========================================================
+   CSS RESPONSIVO / INTERAÇÕES
+========================================================= */
+
+const GLOBAL_CSS = `
+  .users-dashboard {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  .users-kpi-grid {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        4,
+        minmax(0, 1fr)
+      );
+
+    gap: 12px;
+  }
+
+  .users-kpi {
+    transition:
+      transform 170ms ease,
+      box-shadow 170ms ease,
+      border-color 170ms ease;
+  }
+
+  .users-kpi:hover {
+    transform:
+      translateY(-2px);
+
+    box-shadow:
+      0 9px 24px
+      rgba(
+        31,
+        55,
+        34,
+        0.08
+      );
+  }
+
+  .users-city-card {
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .users-city-card:hover {
+    transform:
+      translateY(-2px);
+
+    box-shadow:
+      0 7px 18px
+      rgba(
+        31,
+        55,
+        34,
+        0.07
+      );
+  }
+
+  .users-main-button,
+  .users-secondary-button,
+  .users-detail-button {
+    transition:
+      transform 150ms ease,
+      background 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .users-main-button:hover,
+  .users-detail-button:hover {
+    transform:
+      translateY(-1px);
+
+    box-shadow:
+      0 5px 14px
+      rgba(
+        46,
+        79,
+        47,
+        0.18
+      );
+  }
+
+  .users-secondary-button:hover {
+    transform:
+      translateY(-1px);
+
+    background:
+      #E7EEE7 !important;
+  }
+
+  .users-table-row {
+    transition:
+      background 130ms ease;
+  }
+
+  .users-table-row:hover {
+    background:
+      #F8FAF8;
+  }
+
+  .users-search-input:focus,
+  .users-filter-select:focus {
+    outline: none;
+
+    border-color:
+      #AFC5B0 !important;
+
+    box-shadow:
+      0 0 0 3px
+      rgba(
+        46,
+        79,
+        47,
+        0.08
+      );
+  }
+
+  .users-refresh-icon {
+    display:
+      inline-block;
+  }
+
+  .users-refresh-icon.loading {
+    animation:
+      usersSpin
+      800ms linear
+      infinite;
+  }
+
+  .users-loading-spinner {
+    animation:
+      usersSpin
+      800ms linear
+      infinite;
+  }
+
+  @keyframes usersSpin {
+    to {
+      transform:
+        rotate(360deg);
+    }
+  }
+
+  @media (
+    max-width: 1100px
+  ) {
+    .users-kpi-grid {
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+    }
+  }
+
+  @media (
+    max-width: 760px
+  ) {
+    .users-dashboard-shell {
+      padding:
+        14px !important;
+
+      border-radius:
+        20px !important;
+    }
+
+    .users-hero {
+      padding:
+        20px !important;
+    }
+
+    .users-hero-top {
+      flex-direction:
+        column;
+
+      align-items:
+        flex-start !important;
+    }
+
+    .users-hero-actions {
+      width:
+        100%;
+    }
+
+    .users-kpi-grid {
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+    }
+
+    .users-toolbar {
+      align-items:
+        stretch !important;
+
+      flex-direction:
+        column;
+    }
+
+    .users-filter-group {
+      width:
+        100%;
+    }
+
+    .users-filter-select {
+      flex: 1;
+
+      min-width:
+        150px;
+    }
+
+    .users-city-header {
+      align-items:
+        flex-start !important;
+
+      flex-direction:
+        column;
+    }
+  }
+
+  @media (
+    max-width: 500px
+  ) {
+    .users-kpi-grid {
+      grid-template-columns:
+        1fr;
+    }
+
+    .users-hero-stats {
+      grid-template-columns:
+        1fr 1fr !important;
+    }
+  }
+`;
+
+/* =========================================================
    ESTILOS
 ========================================================= */
 
 const styles = {
-  /* =======================================================
-     FUNDO
-  ======================================================= */
+  /* FUNDO */
 
   dashboardShell: {
     background:
@@ -2682,14 +3084,13 @@ const styles = {
       "border-box",
   },
 
-  /* =======================================================
-     LOADING
-  ======================================================= */
+  /* LOADING */
 
   loadingRoot: {
     minHeight: 380,
 
     display: "flex",
+
     flexDirection:
       "column",
 
@@ -2721,9 +3122,6 @@ const styles = {
 
     borderTopColor:
       COLORS.orange,
-
-    animation:
-      "usersSpin 800ms linear infinite",
   },
 
   loadingTitle: {
@@ -2744,9 +3142,7 @@ const styles = {
       COLORS.muted,
   },
 
-  /* =======================================================
-     HERO
-  ======================================================= */
+  /* HERO */
 
   hero: {
     position:
@@ -2845,7 +3241,8 @@ const styles = {
     padding:
       "0 15px",
 
-    border: "none",
+    border:
+      "none",
 
     borderRadius: 12,
 
@@ -2941,9 +3338,7 @@ const styles = {
       "#FFFFFF",
   },
 
-  /* =======================================================
-     ERRO
-  ======================================================= */
+  /* ERRO */
 
   errorBox: {
     display: "flex",
@@ -3027,7 +3422,8 @@ const styles = {
     padding:
       "0 13px",
 
-    border: "none",
+    border:
+      "none",
 
     borderRadius: 10,
 
@@ -3045,9 +3441,7 @@ const styles = {
       "pointer",
   },
 
-  /* =======================================================
-     SEÇÕES
-  ======================================================= */
+  /* SEÇÃO */
 
   section: {
     marginTop: 28,
@@ -3092,9 +3486,7 @@ const styles = {
       COLORS.muted,
   },
 
-  /* =======================================================
-     KPIs
-  ======================================================= */
+  /* KPI */
 
   kpiCard: {
     minHeight: 150,
@@ -3111,7 +3503,8 @@ const styles = {
     border:
       `1px solid ${COLORS.border}`,
 
-    textAlign: "left",
+    textAlign:
+      "left",
 
     color:
       "inherit",
@@ -3192,8 +3585,7 @@ const styles = {
 
     fontWeight: 900,
 
-    letterSpacing:
-      -0.4,
+    letterSpacing: -0.4,
   },
 
   kpiFooter: {
@@ -3221,9 +3613,7 @@ const styles = {
       COLORS.green,
   },
 
-  /* =======================================================
-     CIDADES
-  ======================================================= */
+  /* CIDADES */
 
   cityHeader: {
     display: "flex",
@@ -3319,7 +3709,8 @@ const styles = {
     border:
       `1px solid ${COLORS.border}`,
 
-    textAlign: "left",
+    textAlign:
+      "left",
 
     cursor:
       "pointer",
@@ -3464,9 +3855,7 @@ const styles = {
       COLORS.muted,
   },
 
-  /* =======================================================
-     LISTA
-  ======================================================= */
+  /* LISTA */
 
   listCard: {
     overflow:
@@ -3519,7 +3908,8 @@ const styles = {
 
     left: 12,
 
-    top: "50%",
+    top:
+      "50%",
 
     transform:
       "translateY(-50%)",
@@ -3536,7 +3926,8 @@ const styles = {
   },
 
   input: {
-    width: "100%",
+    width:
+      "100%",
 
     height: 42,
 
@@ -3569,7 +3960,8 @@ const styles = {
 
     right: 9,
 
-    top: "50%",
+    top:
+      "50%",
 
     transform:
       "translateY(-50%)",
@@ -3585,7 +3977,8 @@ const styles = {
     justifyContent:
       "center",
 
-    border: "none",
+    border:
+      "none",
 
     borderRadius: 8,
 
@@ -3709,9 +4102,7 @@ const styles = {
     fontWeight: 900,
   },
 
-  /* =======================================================
-     TABELA
-  ======================================================= */
+  /* TABELA */
 
   tableScroll: {
     overflowX:
@@ -3719,7 +4110,8 @@ const styles = {
   },
 
   table: {
-    width: "100%",
+    width:
+      "100%",
 
     minWidth: 960,
 
@@ -3763,9 +4155,7 @@ const styles = {
       `1px solid ${COLORS.borderSoft}`,
   },
 
-  /* =======================================================
-     IDENTIDADE
-  ======================================================= */
+  /* IDENTIDADE */
 
   userIdentity: {
     minWidth: 200,
@@ -3849,9 +4239,7 @@ const styles = {
       COLORS.muted,
   },
 
-  /* =======================================================
-     BADGES
-  ======================================================= */
+  /* BADGES */
 
   roleBadge: {
     display:
@@ -3936,9 +4324,7 @@ const styles = {
     fontSize: 11,
   },
 
-  /* =======================================================
-     CIDADE DA TABELA
-  ======================================================= */
+  /* CIDADE */
 
   cityCell: {
     display: "flex",
@@ -3982,7 +4368,8 @@ const styles = {
   detailsButton: {
     height: 34,
 
-    display: "inline-flex",
+    display:
+      "inline-flex",
 
     alignItems:
       "center",
@@ -3995,7 +4382,8 @@ const styles = {
     padding:
       "0 11px",
 
-    border: "none",
+    border:
+      "none",
 
     borderRadius: 10,
 
@@ -4013,9 +4401,7 @@ const styles = {
     fontWeight: 800,
   },
 
-  /* =======================================================
-     VAZIO
-  ======================================================= */
+  /* VAZIO */
 
   emptyState: {
     display: "flex",
@@ -4094,7 +4480,8 @@ const styles = {
     padding:
       "0 14px",
 
-    border: "none",
+    border:
+      "none",
 
     borderRadius: 10,
 
@@ -4112,9 +4499,7 @@ const styles = {
     fontWeight: 800,
   },
 
-  /* =======================================================
-     FOOTER
-  ======================================================= */
+  /* FOOTER */
 
   footer: {
     display: "flex",
