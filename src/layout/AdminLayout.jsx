@@ -73,6 +73,12 @@ const NAV_ITEMS = [
     to: "/finance",
     icon: "finance",
   },
+  {
+    id: "mobilidade",
+    label: "Mobilidade",
+    to: "/mobilidade",
+    icon: "orders",
+  },
 
   {
     id: "users",
