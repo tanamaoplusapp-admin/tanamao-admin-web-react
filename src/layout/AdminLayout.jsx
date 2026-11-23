@@ -77,7 +77,7 @@ const NAV_ITEMS = [
     id: "mobilidade",
     label: "Mobilidade",
     to: "/mobilidade",
-    icon: "orders",
+    icon: "mobility",
   },
 
   {
@@ -683,6 +683,18 @@ function NavIcon({
           <path d="M9 11H15" />
 
           <path d="M9 15H13" />
+        </svg>
+      );
+
+    case "mobility":
+      return (
+        <svg {...common}>
+          <path d="M5 16l1.6-6.2A2 2 0 0 1 8.5 8.3h7A2 2 0 0 1 17.4 9.8L19 16" />
+          <path d="M3.5 16h17v3h-17z" />
+          <path d="M6 12h12" />
+          <circle cx="7" cy="18" r="1" />
+          <circle cx="17" cy="18" r="1" />
+          <path d="M4.5 5h4" />
         </svg>
       );
 

@@ -17,6 +17,7 @@ import Bugs from "./pages/Bugs";
 import BugDetail from "./pages/Bugs/Detail";
 
 import Audit from "./pages/Audit";
+import Mobilidade from "./pages/Mobilidade";
 
 export const router = createBrowserRouter([
   {
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
       { path: "bugs/:id", element: <BugDetail /> },
 
       { path: "audit", element: <Audit /> },
+      { path: "mobilidade", element: <Mobilidade /> },
     ],
   },
 ]);
