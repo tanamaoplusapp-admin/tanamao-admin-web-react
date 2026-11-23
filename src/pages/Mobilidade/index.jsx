@@ -149,7 +149,7 @@ function Motoristas() {
   };
   const review = async (kind, targetId, decision) => {
     if (decision !== 'aprovar' && !motivo.trim()) { setError('Informe um motivo para reprovar, suspender ou pedir reenvio.'); return; }
-    const aviso = kind === 'perfil' && decision === 'aprovar' ? 'Aprovar administrativamente este cadastro e as modalidades selecionadas? Caso haja CNH, foto ou veículo pendente, o perfil ficará aprovado com restrição, SEM poder ficar online ou aceitar corridas reais até regularização documental. A decisão será auditada.' : `Confirma a decisão: ${decision.replaceAll('_', ' ')}? Esta ação fica registrada no backend.`;
+    const aviso = kind === 'perfil' && decision === 'aprovar' ? 'Aprovar administrativamente este cadastro e as modalidades selecionadas? A conta selecionada receberá liberação operacional manual, mesmo com documentos pendentes ou EAR não informado. Isso permite ficar online e receber solicitações, desde que tenha veículo cadastrado, localização ativa e os requisitos gerais do perfil. Use somente na conta que está testando. A decisão será auditada.' : `Confirma a decisão: ${decision.replaceAll('_', ' ')}? Esta ação fica registrada no backend.`;
     if (!window.confirm(aviso)) return;
     setError(''); setSuccess(''); setAction(`${kind}-${targetId}`);
     try {
@@ -201,14 +201,14 @@ function Motoristas() {
         <button className="mam-btn mam-btn--quiet" onClick={() => setDetail(null)}>Fechar</button></div>
       <div className="mam-idpanel">
         {detail.fotoMotorista ? <img className="mam-driverphoto" src={detail.fotoMotorista} alt="Foto enviada pelo motorista" referrerPolicy="no-referrer" /> : <div className="mam-photoempty">Foto ausente</div>}
-        <div><strong>Conferência de identidade</strong><p>Compare o rosto com a CNH antes de aprovar. Para operar corridas reais, o servidor exige foto, CNH, EAR e veículo aprovado.</p>
+        <div><strong>Conferência de identidade</strong><p>Compare o rosto com a CNH antes de aprovar. EAR facultativo no cadastro. O administrador pode liberar individualmente o perfil para testes pelo botão de aprovação.</p>
           {p.status === 'aprovado' && !detail.fotoConfere && <Notice message="A foto mudou após a aprovação. É necessária uma nova conferência." />}
         </div>
       </div>
-      {p.aprovacaoRestrita && <Notice message="Cadastro aprovado administrativamente com restrição. CNH, foto e/ou veículo ainda precisam ser validados para o motorista ficar online e aceitar corridas." />}
+      {p.aprovacaoRestrita && <Notice message="Cadastro aprovado manualmente. Pendências de documentação permanecem visíveis; a liberação operacional é individual e pode ser revogada suspendendo o perfil." />}
       <div className="mam-detailgrid">
         <div><span>CNH</span><strong><Status value={p.cnh?.status || 'ausente'} /></strong></div>
-        <div><span>Categoria / EAR</span><strong>{p.cnh?.categoria || '—'} / {p.cnh?.ear ? 'Sim' : 'Não'}</strong></div>
+        <div><span>Categoria / EAR</span><strong>{p.cnh?.categoria || '—'} / {p.cnh?.ear ? 'Sim' : 'Não informado / não possui'}</strong></div>
         <div><span>Validade</span><strong>{dateOnly(p.cnh?.validade)}</strong></div>
         <div><span>Número CNH</span><strong>{showCnh ? (p.cnh?.numero || 'Não disponível') : '••••••••'} <button className="mam-inline" type="button" onClick={() => setShowCnh(x => !x)}>{showCnh ? 'Ocultar' : 'Conferir'}</button></strong></div>
       </div>
@@ -230,13 +230,13 @@ function Motoristas() {
         </div>)}
         {!detail.veiculos?.length && <Empty>O motorista ainda não cadastrou veículos.</Empty>}
       </div>
-      <div className="mam-section"><h4>Modalidades autorizadas</h4><p>Selecione as modalidades do cadastro. Documentos pendentes impedem que o motorista opere corridas reais.</p>
+      <div className="mam-section"><h4>Modalidades autorizadas</h4><p>Selecione as modalidades do cadastro. A aprovação administrativa libera individualmente esta conta; verifique as pendências antes de operar comercialmente.</p>
         <div className="mam-options">{(p.servicosSolicitados || []).map(s => <label key={s} className="mam-check"><input type="checkbox" checked={approvedServices.includes(s)}
           onChange={e => setApprovedServices(list => e.target.checked ? [...list, s] : list.filter(x => x !== s))} /> {getServiceLabel(s)}</label>)}</div>
         <div className="mam-actionrow"><button className="mam-btn" disabled={!!action || !approvedServices.length} onClick={() => review('perfil', p._id, 'aprovar')}>Aprovar perfil e modalidades</button>
         <button className="mam-btn mam-btn--danger" disabled={!!action} onClick={() => review('perfil', p._id, 'suspender')}>Suspender perfil</button></div>
       </div>
-      <p className="mam-help">O cadastro pode ser aprovado administrativamente; operar corridas reais exige CNH, EAR, foto e veículo regularizados. O backend registra todas as decisões.</p>
+      <p className="mam-help">A aprovação do cadastro é manual e não exige EAR informado. O motorista aprovado manualmente poderá ficar online com um veículo cadastrado compatível, localização ativa e acesso profissional regular. O backend registra todas as decisões.</p>
     </div>}
   </>;
 }
