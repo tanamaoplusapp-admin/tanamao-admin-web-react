@@ -14,6 +14,10 @@ export const reviewMobilityVehicle = (vehicleId, body) =>
   API.patch(`${ROOT}/veiculos/${encodeURIComponent(vehicleId)}/aprovacao`, body).then(r => r.data);
 export const downloadMobilityDocument = documentId =>
   API.get(`${ROOT}/documentos/${encodeURIComponent(documentId)}/download`, { responseType: 'blob' }).then(r => r.data);
+export const getMotoPolicies = ({status = '', busca = '', page = 1} = {}) =>
+  API.get(`${ROOT}/permissoes-moto`, {params:{...(status?{status}:{}),...(busca?{busca}:{}),page}}).then(r => r.data);
+export const reviewMotoPolicy = (chave, body) =>
+  API.patch(`${ROOT}/permissoes-moto/${encodeURIComponent(chave)}`, body).then(r => r.data);
 export const getMobilityTariffs = () => API.get(`${ROOT}/tarifas`).then(r => r.data);
 export const saveMobilityTariff = body => API.put(`${ROOT}/tarifas`, body).then(r => r.data);
 export const seedMobilityTariffs = () =>

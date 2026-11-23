@@ -4,7 +4,7 @@ import {
   getMobilityProfiles, getMobilityProfile, reviewMobilityCnh, reviewMobilityProfile,
   reviewMobilityVehicle, downloadMobilityDocument, getMobilityTariffs,
   saveMobilityTariff, seedMobilityTariffs, getMobilityJobs,
-  cancelMobilityJob, unlockMobilityPin, mobilityError,
+  cancelMobilityJob, unlockMobilityPin, getMotoPolicies, reviewMotoPolicy, mobilityError,
 } from '../../services/mobilidadeAdmin';
 import {
   SERVICES, STATUS_PROFILE, STATUS_JOB, getServiceLabel, getStatusLabel,
@@ -14,7 +14,7 @@ import './Mobilidade.css';
 
 const TABS = [
   ['resumo', 'Visão geral'], ['motoristas', 'Motoristas'],
-  ['tarifas', 'Tarifas'], ['corridas', 'Corridas e entregas'], ['demanda', 'Demanda'],
+  ['tarifas', 'Tarifas'], ['cidades-moto', 'Cidades / Moto'], ['corridas', 'Corridas e entregas'], ['demanda', 'Demanda'],
 ];
 const POSITIVE = new Set(['aprovado', 'concluida', 'confirmado_cliente']);
 const NEGATIVE = new Set(['reprovado', 'suspenso', 'cancelada', 'contestado']);
@@ -59,6 +59,7 @@ export default function MobilidadeAdmin() {
     {tab === 'resumo' && <Resumo go={changeTab} />}
     {tab === 'motoristas' && <Motoristas />}
     {tab === 'tarifas' && <Tarifas />}
+    {tab === 'cidades-moto' && <CidadesMoto />}
     {tab === 'corridas' && <Corridas />}
     {tab === 'demanda' && <Demanda />}
   </section>;
@@ -427,5 +428,88 @@ function Demanda() {
         <p>{g.corridas} corrida(s) · {g.entregas} entrega(s) · {g.fretes} frete(s)</p></div>)}</div> : <Empty>{loading ? 'Consultando dados…' : 'Sem solicitações suficientes nas localidades para mostrar demanda recente.'}</Empty>}
     </div>
     <p className="mam-help">O mapa de áreas de maior procura que aparece aos motoristas utiliza um cálculo próprio no backend, considerando pedidos reais e motoristas online. Esta tela é apenas um resumo operacional.</p>
+  </>;
+}
+
+function CidadesMoto() {
+  const [rows,setRows]=useState([]);
+  const [page,setPage]=useState(1);
+  const [total,setTotal]=useState(0);
+  const [status,setStatus]=useState('');
+  const [busca,setBusca]=useState('');
+  const [buscaAplicada,setBuscaAplicada]=useState('');
+  const [selected,setSelected]=useState(null);
+  const [decision,setDecision]=useState('pendente');
+  const [note,setNote]=useState('');
+  const [source,setSource]=useState('');
+  const [reviewDate,setReviewDate]=useState('');
+  const [confirmed,setConfirmed]=useState(false);
+  const [pontaConfirmed,setPontaConfirmed]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [error,setError]=useState('');
+  const [success,setSuccess]=useState('');
+  const refresh=useCallback(async()=>{
+    setLoading(true);
+    try{const r=await getMotoPolicies({status,busca:buscaAplicada,page});setRows(r.localidades||[]);setTotal(r.total||0);setError('');}
+    catch(e){setError(mobilityError(e));}
+    finally{setLoading(false);}
+  },[status,buscaAplicada,page]);
+  useEffect(()=>{refresh();},[refresh]);
+  const select=(r)=>{
+    setSelected(r);setDecision(r.status);setNote(r.fundamento||'');setSource(r.fonteOficial||'');
+    setReviewDate(r.analisarNovamenteEm?new Date(r.analisarNovamenteEm).toISOString().slice(0,10):'');
+    setConfirmed(false);setPontaConfirmed(false);setError('');setSuccess('');
+  };
+  const ponta=selected?.pais==='BR'&&selected?.uf==='MS'&&selected?.cidadeNormalizada==='ponta pora';
+  const save=async()=>{
+    if(!selected||saving)return;
+    if(note.trim().length<30){setError('Descreva o fundamento e a justificativa com pelo menos 30 caracteres.');return;}
+    if(decision!=='pendente'&&!source.trim()){setError('Informe o link HTTPS da fonte legal oficial.');return;}
+    if(decision==='autorizado'&&(!reviewDate||!confirmed)){setError('Defina a data para nova revisao e confirme a analise documental.');return;}
+    if(decision==='autorizado'&&ponta&&!pontaConfirmed){setError('Ponta Pora: confirme a existencia de norma posterior oficial que afaste a restricao do artigo 16.');return;}
+    if(!window.confirm('Registrar decisao? Ela afetara imediatamente as corridas de moto nesta localidade.'))return;
+    setSaving(true);setError('');setSuccess('');
+    try{
+      await reviewMotoPolicy(selected.chave,{status:decision,fundamento:note.trim(),fonteOficial:source.trim(),
+        analisarNovamenteEm:decision==='autorizado'?new Date(`${reviewDate}T23:59:59.000Z`).toISOString():null,
+        confirmouAnalise:confirmed,confirmacaoAtualizacaoLei:pontaConfirmed?'CONFIRMO_REVOGACAO_ART16':''});
+      setSelected(null);setSuccess('Revisao registrada. O app consultara essa nova regra automaticamente.');await refresh();
+    }catch(e){setError(mobilityError(e));}
+    finally{setSaving(false);}
+  };
+  const statusText={pendente:'Aguardando revisao',autorizado:'Habilitada',restrito:'Restricao legal',revisao_vencida:'Revisao vencida',desativado_globalmente:'Modulo desativado'};
+  return <>
+    <div className="mam-toolbar"><div><h2>Cidades e permissoes de moto</h2><p>Descoberta automatica, revisao humana e vencimento das autorizacoes</p></div>
+      <button className="mam-btn mam-btn--quiet" disabled={loading} onClick={refresh}>Atualizar</button></div>
+    <Notice message={error}/><Notice message={success} variant="success"/>
+    <div className="mam-card">
+      <div className="mam-notice mam-notice--warning">Novas cidades aparecem automaticamente quando o cliente escolhe a origem. Anuncios de mototaxi e resultados de busca nao comprovam permissao. Sem decisao fundamentada, a corrida de moto permanece bloqueada.</div>
+      <div className="mam-filterrow mam-moto-filters">
+        <Field label="Situacao"><select value={status} onChange={e=>{setStatus(e.target.value);setPage(1);setSelected(null);}}><option value="">Todas</option><option value="pendente">Em revisao</option><option value="autorizado">Autorizadas</option><option value="restrito">Restritas</option></select></Field>
+        <Field label="Cidade"><input value={busca} onChange={e=>setBusca(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){setPage(1);setBuscaAplicada(busca.trim());}}} placeholder="Ex.: Ponta Pora" maxLength={60}/></Field>
+        <button className="mam-btn mam-btn--quiet" onClick={()=>{setPage(1);setBuscaAplicada(busca.trim());}}>Buscar</button>
+        <p>{loading?'Consultando...':`${total} cidades`}</p>
+      </div>
+      <div className="mam-tablewrap"><table className="mam-table"><thead><tr><th>Localidade</th><th>Situacao</th><th>Ultima consulta</th><th>Revisar ate</th><th>Analise</th></tr></thead>
+        <tbody>{rows.map(r=><tr key={r.chave}><td><strong>{r.cidade}</strong><div className="mam-small">{r.uf} / {r.pais}</div></td>
+          <td><span className={`mam-status mam-status--${r.politica?.permitida?'good':r.politica?.situacao==='restrito'?'bad':'neutral'}`}>{statusText[r.politica?.situacao]||'Pendente'}</span></td>
+          <td>{dateLabel(r.consultadaEm)}</td><td>{dateOnly(r.analisarNovamenteEm)}</td><td><button className="mam-btn mam-btn--quiet" onClick={()=>select(r)}>Revisar</button></td></tr>)}</tbody></table></div>
+      {!loading&&!rows.length&&<Empty>Nenhuma cidade encontrada. A lista sera preenchida automaticamente conforme consultas dos clientes.</Empty>}
+      <div className="mam-pagination"><button className="mam-btn mam-btn--quiet" disabled={page<=1||loading} onClick={()=>setPage(p=>p-1)}>Anterior</button><span>Pagina {page} / {Math.max(1,Math.ceil(total/30))}</span><button className="mam-btn mam-btn--quiet" disabled={page*30>=total||loading} onClick={()=>setPage(p=>p+1)}>Proxima</button></div>
+    </div>
+    {selected&&<div className="mam-card mam-moto-review">
+      <div className="mam-card-title"><div><h3>Revisar {selected.cidade} / {selected.uf} / {selected.pais}</h3><p>O sistema registra a decisao e o documento que a fundamenta.</p></div><button className="mam-btn mam-btn--quiet" onClick={()=>setSelected(null)}>Fechar</button></div>
+      {ponta&&<Notice variant="warning" message="Ponta Pora: o art. 16 da Lei Municipal 4.441/2020 restringe o cadastro de motocicletas em plataformas abrangidas. Exija prova oficial de revogacao ou alteracao antes de liberar."/>}
+      <div className="mam-gridform"><Field label="Nova situacao"><select value={decision} onChange={e=>setDecision(e.target.value)}><option value="pendente">Aguardando verificacao</option><option value="restrito">Restricao identificada</option><option value="autorizado">Autorizar apos verificar</option></select></Field>
+      {decision==='autorizado'&&<Field label="Revisar autorizacao ate"><input type="date" value={reviewDate} onChange={e=>setReviewDate(e.target.value)}/></Field>}</div>
+      <Field label="Fundamento legal e justificativa"><textarea rows={4} value={note} onChange={e=>setNote(e.target.value)} placeholder="Lei, artigo, data de vigencia e condicoes aplicaveis..." maxLength={1200}/></Field>
+      <Field label="Documento oficial (link HTTPS)"><input type="url" value={source} onChange={e=>setSource(e.target.value)} placeholder="https://..." maxLength={800}/></Field>
+      {!!selected.fonteOficial&&<p className="mam-help">Fonte anterior: <a href={selected.fonteOficial} target="_blank" rel="noopener noreferrer">Consultar documento</a></p>}
+      {decision==='autorizado'&&<label className="mam-check mam-moto-confirm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> Confirmei a regra legal vigente e as autorizacoes exigidas para a operacao do Tanamao+.</label>}
+      {decision==='autorizado'&&ponta&&<label className="mam-check mam-moto-confirm"><input type="checkbox" checked={pontaConfirmed} onChange={e=>setPontaConfirmed(e.target.checked)}/> Tenho documento oficial posterior que revoga ou afasta expressamente o artigo 16 e registrei essa norma acima.</label>}
+      <div className="mam-actionrow"><button className="mam-btn" disabled={saving} onClick={save}>{saving?'Salvando...':'Salvar decisao'}</button></div>
+      <p className="mam-help">Autorizacao territorial nao substitui habilitacao de motoristas, documentos, licenca da plataforma nem requisitos do municipio. Autorizacoes vencidas tornam-se indisponiveis automaticamente.</p>
+    </div>}
   </>;
 }

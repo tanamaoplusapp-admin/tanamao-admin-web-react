@@ -97,3 +97,12 @@
 .mam-demandcard p { margin:0; font-size:11px; }
 @media(max-width:1060px) { .mam-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .mam-two-col--form { grid-template-columns:1fr; } }
 @media(max-width:700px) { .mam-root { padding:17px 13px 42px; } .mam-heading { align-items:flex-start; flex-direction:column; } .mam-heading h1 { font-size:26px; } .mam-headchip { white-space:normal; } .mam-hero { padding:18px; } .mam-tabs { gap:5px; } .mam-tab { font-size:11px; padding:10px; } .mam-toolbar { align-items:flex-start; } .mam-stats,.mam-two-col { grid-template-columns:1fr; } .mam-card { padding:16px; } .mam-gridform,.mam-detailgrid { grid-template-columns:1fr; } .mam-idpanel { align-items:flex-start; flex-direction:column; } .mam-actionrow .mam-btn { flex:1; } }
+
+.mam-moto-filters { align-items:flex-end;justify-content:flex-start; }
+.mam-moto-filters .mam-field { margin-bottom:0; }
+.mam-moto-filters p { margin:0 0 10px auto; }
+.mam-moto-review { border-color:#caddcd; }
+.mam-moto-review .mam-check { line-height:1.5; }
+.mam-moto-confirm { display:flex; margin:15px 0; align-items:flex-start; max-width:800px; }
+.mam-moto-confirm input { margin-top:3px; flex:0 0 15px; }
+.mam-small { color:#7d8b7c; font-size:11px; margin-top:5px; }
