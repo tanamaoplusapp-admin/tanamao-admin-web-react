@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  getMobilityProfiles, getMobilityProfile, controlMobilityTest, reviewMobilityCnh, reviewMobilityProfile,
+  getMobilityProfiles, getMobilityProfile, reviewMobilityCnh, reviewMobilityProfile,
   reviewMobilityVehicle, downloadMobilityDocument, getMobilityTariffs,
   saveMobilityTariff, seedMobilityTariffs, getMobilityJobs,
   cancelMobilityJob, unlockMobilityPin, getMotoPolicies, reviewMotoPolicy, mobilityError,
@@ -89,7 +89,7 @@ function Resumo({ go }) {
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   const jobs = data.viagens?.solicitacoes || [];
-  const activeJobs = jobs.filter(x => !x.testeOperacional && ['procurando', 'ofertada', 'aceita', 'no_local', 'em_andamento'].includes(x.status));
+  const activeJobs = jobs.filter(x => ['procurando', 'ofertada', 'aceita', 'no_local', 'em_andamento'].includes(x.status));
   const counts = [
     { title: 'Motoristas em análise', number: data.pendentes?.total, info: 'Aguardando decisão administrativa', click: 'motoristas' },
     { title: 'Motoristas aprovados', number: data.aprovados?.total, info: 'Perfis aprovados (não necessariamente online)', click: 'motoristas' },
@@ -124,10 +124,6 @@ function Motoristas() {
   const [motivo, setMotivo] = useState('');
   const [approvedServices, setApprovedServices] = useState([]);
   const [showCnh, setShowCnh] = useState(false);
-  const [clienteTesteId, setClienteTesteId] = useState('');
-  const [veiculoTesteId, setVeiculoTesteId] = useState('');
-  const [duracaoTeste, setDuracaoTeste] = useState('30');
-  const [motivoTeste, setMotivoTeste] = useState('Teste controlado do fluxo de corridas');
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState('');
   const [error, setError] = useState('');
@@ -147,8 +143,6 @@ function Motoristas() {
       const r = await getMobilityProfile(profileId);
       setDetail(r);
       setMotivo(''); setShowCnh(false);
-      setClienteTesteId(r.perfil?.liberacaoTeste?.clienteTesteId || '');
-      setVeiculoTesteId(r.perfil?.liberacaoTeste?.veiculoId || (r.veiculos || []).find(v => v.tipo === 'carro' && !['suspenso','reprovado'].includes(v.status))?._id || '');
       setApprovedServices(r.perfil?.servicosAprovados?.length ? r.perfil.servicosAprovados : r.perfil?.servicosSolicitados || []);
     } catch (e) { setError(mobilityError(e)); }
     finally { setAction(''); }
@@ -166,25 +160,6 @@ function Motoristas() {
       setSuccess('Análise registrada com sucesso.');
       setMotivo('');
       await Promise.all([load(), detail?.perfil?._id ? open(detail.perfil._id, true) : Promise.resolve()]);
-    } catch (e) { setError(mobilityError(e)); }
-    finally { setAction(''); }
-  };
-  const controlarTeste = async acao => {
-    if (!detail?.perfil?._id) return;
-    if (acao === 'liberar') {
-      if (!/^[a-fA-F0-9]{24}$/.test(clienteTesteId.trim())) { setError('Informe o ID completo da conta de CLIENTE de teste (24 caracteres).'); return; }
-      if (!veiculoTesteId) { setError('Selecione um carro cadastrado pelo motorista.'); return; }
-      if (!Number.isInteger(Number(duracaoTeste)) || Number(duracaoTeste) < 5 || Number(duracaoTeste) > 60) { setError('Informe de 5 a 60 minutos.'); return; }
-    }
-    const confirmacao = acao === 'revogar' ? 'Revogar a liberacao temporaria e deixar o motorista offline?' : 'ATENCAO: libera apenas SIMULACOES para o cliente indicado, sem transporte ou cobranca real. Continuar?';
-    if (!window.confirm(confirmacao)) return;
-    setAction('teste'); setError(''); setSuccess('');
-    try {
-      await controlMobilityTest(detail.perfil._id, acao === 'revogar'
-        ? { acao: 'revogar' }
-        : { acao: 'liberar', clienteTesteId: clienteTesteId.trim(), veiculoId: veiculoTesteId, minutos: Number(duracaoTeste), motivo: motivoTeste.trim() });
-      setSuccess(acao === 'revogar' ? 'Liberacao de teste revogada.' : 'Demonstracao autorizada, com prazo de expiracao e cliente especifico.');
-      await Promise.all([load(), open(detail.perfil._id, true)]);
     } catch (e) { setError(mobilityError(e)); }
     finally { setAction(''); }
   };
@@ -252,29 +227,6 @@ function Motoristas() {
           <button className="mam-btn mam-btn--danger" disabled={!!action} onClick={() => review('veiculo', v._id, 'suspender')}>Suspender</button></div>
         </div>)}
         {!detail.veiculos?.length && <Empty>O motorista ainda não cadastrou veículos.</Empty>}
-      </div>
-      <div className="mam-section mam-teste">
-        <h4>Demonstracao temporaria (somente testes)</h4>
-        <p>Teste a chegada e o aceite de ofertas usando <strong>uma conta de cliente especifica</strong>, sem liberar o motorista para corridas comerciais. Nao dispense a aprovacao da CNH para operacao real.</p>
-        {p.liberacaoTeste?.expiraEm && <Notice variant={p.liberacaoTeste.revogadaEm || new Date(p.liberacaoTeste.expiraEm) <= new Date() ? 'warning' : 'success'} message={`${p.liberacaoTeste.revogadaEm ? 'Revogada' : new Date(p.liberacaoTeste.expiraEm) <= new Date() ? 'Expirada' : 'Ativa'} ate ${dateLabel(p.liberacaoTeste.expiraEm)}; conta cliente: ${p.liberacaoTeste.clienteTesteId || '-'}`} />}
-        <div className="mam-formgrid">
-          <Field label="ID da conta cliente de teste" hint="Use outra conta, nao a conta motorista; consulte o ID completo na secao Usuarios.">
-            <input type="text" value={clienteTesteId} onChange={e => setClienteTesteId(e.target.value)} placeholder="24 caracteres (ObjectId)" maxLength={24} autoComplete="off" />
-          </Field>
-          <Field label="Carro cadastrado para simulacao">
-            <select value={veiculoTesteId} onChange={e => setVeiculoTesteId(e.target.value)}>
-              <option value="">Selecione o veiculo</option>
-              {(detail.veiculos || []).filter(v => v.tipo === 'carro' && !['suspenso','reprovado'].includes(v.status)).map(v => <option value={v._id} key={v._id}>{v.marca} {v.modelo} - {v.placa}</option>)}
-            </select>
-          </Field>
-          <Field label="Duracao em minutos (5 a 60)"><input type="number" min="5" max="60" step="5" value={duracaoTeste} onChange={e => setDuracaoTeste(e.target.value)} /></Field>
-          <Field label="Motivo"><input type="text" value={motivoTeste} onChange={e => setMotivoTeste(e.target.value)} maxLength={350} /></Field>
-        </div>
-        <p className="mam-help"><strong>Ativacao do servidor:</strong> MOBILITY_TEST_MODE_ENABLED=true no Render. A demonstracao funciona apenas para corrida de carro e a conta cliente informada; expira sozinha. Nao transforma CNH, carro ou motorista em aprovados e nao gera receita.</p>
-        <div className="mam-actionrow">
-          <button className="mam-btn" disabled={!!action || !veiculoTesteId} onClick={() => controlarTeste('liberar')}>Liberar para testar</button>
-          <button className="mam-btn mam-btn--danger" disabled={!!action || !p.liberacaoTeste?.expiraEm} onClick={() => controlarTeste('revogar')}>Revogar teste</button>
-        </div>
       </div>
       <div className="mam-section"><h4>Modalidades autorizadas</h4><p>Marque apenas os serviços que poderão ser oferecidos ao motorista.</p>
         <div className="mam-options">{(p.servicosSolicitados || []).map(s => <label key={s} className="mam-check"><input type="checkbox" checked={approvedServices.includes(s)}
@@ -416,11 +368,11 @@ function Corridas() {
     <div className="mam-card"><div className="mam-filterrow"><Field label="Situação da viagem"><select value={status} onChange={e => { setStatus(e.target.value); setSelected(null); }}>
       {STATUS_JOB.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></Field><p>{loading ? 'Consultando…' : `${rows.length} viagem(ns) exibida(s)`}</p></div>
       <div className="mam-tablewrap"><table className="mam-table"><thead><tr><th>Solicitação</th><th>Tipo</th><th>Valor calculado</th><th>Situação</th><th>Data</th><th></th></tr></thead><tbody>
-        {rows.map(job => <tr key={job._id}><td><strong>{shortId(job._id)}</strong> {job.testeOperacional && <span className="mam-demo-flag">TESTE</span>}</td><td>{getServiceLabel(job.servico)}</td><td>{money(job.valorCentavos)}</td><td><Status value={job.status} /></td><td>{dateLabel(job.createdAt)}</td><td><button className="mam-inline" onClick={() => { setSelected(job); setReason(''); }}>Detalhes</button></td></tr>)}
+        {rows.map(job => <tr key={job._id}><td><strong>{shortId(job._id)}</strong></td><td>{getServiceLabel(job.servico)}</td><td>{money(job.valorCentavos)}</td><td><Status value={job.status} /></td><td>{dateLabel(job.createdAt)}</td><td><button className="mam-inline" onClick={() => { setSelected(job); setReason(''); }}>Detalhes</button></td></tr>)}
       </tbody></table></div>
       {!rows.length && !loading && <Empty>Nenhuma solicitação encontrada.</Empty>}
     </div>
-    {selected && <div className="mam-card mam-detail"><div className="mam-card-title"><div><h3>Detalhes da viagem {shortId(selected._id)}</h3><p><Status value={selected.status} /> · {getServiceLabel(selected.servico)} {selected.testeOperacional && <span className="mam-demo-flag">DEMONSTRAÇÃO</span>}</p></div>
+    {selected && <div className="mam-card mam-detail"><div className="mam-card-title"><div><h3>Detalhes da viagem {shortId(selected._id)}</h3><p><Status value={selected.status} /> · {getServiceLabel(selected.servico)}</p></div>
       <button className="mam-btn mam-btn--quiet" onClick={() => setSelected(null)}>Fechar</button></div>
       <div className="mam-detailgrid"><div><span>Origem</span><strong>{shortLocation(selected.origem)}</strong></div><div><span>Destino</span><strong>{shortLocation(selected.destino)}</strong></div>
         <div><span>Distância / duração</span><strong>{Number(selected.distanciaKm || 0).toFixed(1)} km / {Math.round(Number(selected.duracaoMin || 0))} min</strong></div>
@@ -428,7 +380,7 @@ function Corridas() {
         <div><span>Motorista vinculado</span><strong>{shortId(selected.motoristaId)}</strong></div>
         <div><span>Pagamento direto</span><strong>{(selected.pagamento?.metodo || '—').toUpperCase()} · {selected.pagamento?.status || 'pendente'}</strong></div>
       </div>
-      <p className="mam-help">{selected.testeOperacional ? 'SIMULAÇÃO: valor ilustrativo. Não realizar transporte, cobrança ou avaliação pública.' : 'O Tanamão+ calcula o preço, mas não recebe nem comprova automaticamente os pagamentos feitos ao motorista.'}</p>
+      <p className="mam-help">O Tanamão+ calcula o preço, mas não recebe nem comprova automaticamente os pagamentos feitos ao motorista.</p>
       {!terminal && <div className="mam-section"><Field label="Motivo para cancelamento administrativo"><textarea rows="2" value={reason} maxLength={400} onChange={e => setReason(e.target.value)} placeholder="Descreva o motivo…" /></Field>
         <div className="mam-actionrow"><button className="mam-btn mam-btn--danger" disabled={busy} onClick={cancel}>Cancelar viagem</button>
           {['aceita', 'no_local', 'em_andamento'].includes(selected.status) && <button className="mam-btn mam-btn--quiet" disabled={busy} onClick={resetPin}>Desbloquear tentativas de PIN</button>}

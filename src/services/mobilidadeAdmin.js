@@ -10,8 +10,6 @@ export const reviewMobilityCnh = (profileId, body) =>
   API.patch(`${ROOT}/perfis/${encodeURIComponent(profileId)}/cnh`, body).then(r => r.data);
 export const reviewMobilityProfile = (profileId, body) =>
   API.patch(`${ROOT}/perfis/${encodeURIComponent(profileId)}/aprovacao`, body).then(r => r.data);
-export const controlMobilityTest = (profileId, body) =>
-  API.post(`${ROOT}/perfis/${encodeURIComponent(profileId)}/teste`, body).then(r => r.data);
 export const reviewMobilityVehicle = (vehicleId, body) =>
   API.patch(`${ROOT}/veiculos/${encodeURIComponent(vehicleId)}/aprovacao`, body).then(r => r.data);
 export const downloadMobilityDocument = documentId =>
