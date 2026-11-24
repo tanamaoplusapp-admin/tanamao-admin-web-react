@@ -26,6 +26,7 @@ import Audit from "../pages/Audit";
 import Orders from "../pages/Orders";
 import OrderDetail from "../pages/Orders/Detail";
 import MobilidadeAdmin from "../pages/Mobilidade";
+import ServicosAdmin from "../pages/Servicos";
 
 export default function AppRoutes() {
   return (
@@ -67,6 +68,7 @@ export default function AppRoutes() {
 
         <Route path="orders" element={<Orders />} />
         <Route path="mobilidade" element={<MobilidadeAdmin />} />
+        <Route path="servicos" element={<ServicosAdmin />} />
         <Route path="orders/:id" element={<OrderDetail />} />
       </Route>
 

@@ -67,6 +67,7 @@ const NAV_ITEMS = [
     icon: "orders",
   },
 
+  {id: "servicos",label: "Serviços e oportunidades",to: "/servicos",icon: "orders"},
   {
     id: "finance",
     label: "Financeiro",
