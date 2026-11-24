@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   getMobilityProfiles, getMobilityProfile, reviewMobilityCnh, reviewMobilityProfile,
@@ -124,6 +124,10 @@ function Motoristas() {
   const [motivo, setMotivo] = useState('');
   const [approvedServices, setApprovedServices] = useState([]);
   const [showCnh, setShowCnh] = useState(false);
+  const [placasConferidas, setPlacasConferidas] = useState({});
+  const [previews, setPreviews] = useState({});
+  const previewUrls = useRef(new Set());
+  useEffect(() => () => { for (const url of previewUrls.current) URL.revokeObjectURL(url); }, []);
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState('');
   const [error, setError] = useState('');
@@ -142,24 +146,26 @@ function Motoristas() {
     try {
       const r = await getMobilityProfile(profileId);
       setDetail(r);
-      setMotivo(''); setShowCnh(false);
+      setMotivo(''); setShowCnh(false); setPlacasConferidas({}); setPreviews({});
       setApprovedServices(r.perfil?.servicosAprovados?.length ? r.perfil.servicosAprovados : r.perfil?.servicosSolicitados || []);
     } catch (e) { setError(mobilityError(e)); }
     finally { setAction(''); }
   };
   const review = async (kind, targetId, decision) => {
+    if (kind === 'veiculo' && decision === 'aprovar' && !placasConferidas[targetId]) { setError('Confira a foto frontal com a placa e o CRLV e marque a confirmação antes de aprovar.'); return; }
     if (decision !== 'aprovar' && !motivo.trim()) { setError('Informe um motivo para reprovar, suspender ou pedir reenvio.'); return; }
-    const aviso = kind === 'perfil' && decision === 'aprovar' ? 'Aprovar administrativamente este cadastro e as modalidades selecionadas? A conta selecionada receberá liberação operacional manual, mesmo com documentos pendentes ou EAR não informado. Isso permite ficar online e receber solicitações, desde que tenha veículo cadastrado, localização ativa e os requisitos gerais do perfil. Use somente na conta que está testando. A decisão será auditada.' : `Confirma a decisão: ${decision.replaceAll('_', ' ')}? Esta ação fica registrada no backend.`;
+    const aviso = kind === 'perfil' && decision === 'aprovar' ? 'Aprovar administrativamente este cadastro e as modalidades selecionadas? Documentos pendentes deixam o perfil restrito, SEM poder operar corridas reais antes da revisão manual.' : `Confirma a decisão: ${decision.replaceAll('_', ' ')}? Esta ação fica registrada no backend.`;
     if (!window.confirm(aviso)) return;
     setError(''); setSuccess(''); setAction(`${kind}-${targetId}`);
     try {
       const body = { decisao: decision, motivo: motivo.trim() };
       if (kind === 'perfil' && decision === 'aprovar') body.servicosAprovados = approvedServices;
+      if (kind === 'veiculo' && decision === 'aprovar') body.placaConferida = true;
       if (kind === 'cnh') await reviewMobilityCnh(targetId, body);
       if (kind === 'perfil') await reviewMobilityProfile(targetId, body);
       if (kind === 'veiculo') await reviewMobilityVehicle(targetId, body);
       setSuccess('Análise registrada com sucesso.');
-      setMotivo('');
+      setMotivo(''); setPlacasConferidas({});
       await Promise.all([load(), detail?.perfil?._id ? open(detail.perfil._id, true) : Promise.resolve()]);
     } catch (e) { setError(mobilityError(e)); }
     finally { setAction(''); }
@@ -175,6 +181,16 @@ function Motoristas() {
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch (e) { setError(mobilityError(e)); }
+    finally { setAction(''); }
+  };
+
+  const previewDocumento = async doc => {
+    setError(''); setAction('visualizar');
+    try {
+      const blob = await downloadMobilityDocument(doc._id);
+      const url = URL.createObjectURL(blob); previewUrls.current.add(url);
+      setPreviews(old => ({...old, [doc._id]: {url, mime:doc.mime}}));
+    } catch(e) { setError(mobilityError(e)); }
     finally { setAction(''); }
   };
 
@@ -201,14 +217,14 @@ function Motoristas() {
         <button className="mam-btn mam-btn--quiet" onClick={() => setDetail(null)}>Fechar</button></div>
       <div className="mam-idpanel">
         {detail.fotoMotorista ? <img className="mam-driverphoto" src={detail.fotoMotorista} alt="Foto enviada pelo motorista" referrerPolicy="no-referrer" /> : <div className="mam-photoempty">Foto ausente</div>}
-        <div><strong>Conferência de identidade</strong><p>Compare o rosto com a CNH antes de aprovar. EAR facultativo no cadastro. O administrador pode liberar individualmente o perfil para testes pelo botão de aprovação.</p>
+        <div><strong>Conferência de identidade</strong><p>Compare o rosto com a CNH antes de aprovar. Para operar corridas reais, o servidor também exige CRLV, foto frontal com placa e veículo aprovado.</p>
           {p.status === 'aprovado' && !detail.fotoConfere && <Notice message="A foto mudou após a aprovação. É necessária uma nova conferência." />}
         </div>
       </div>
-      {p.aprovacaoRestrita && <Notice message="Cadastro aprovado manualmente. Pendências de documentação permanecem visíveis; a liberação operacional é individual e pode ser revogada suspendendo o perfil." />}
+      {p.aprovacaoRestrita && <Notice message="Cadastro aprovado administrativamente com restrição: faltam verificações para operar corridas reais." />}
       <div className="mam-detailgrid">
         <div><span>CNH</span><strong><Status value={p.cnh?.status || 'ausente'} /></strong></div>
-        <div><span>Categoria / EAR</span><strong>{p.cnh?.categoria || '—'} / {p.cnh?.ear ? 'Sim' : 'Não informado / não possui'}</strong></div>
+        <div><span>Categoria / EAR</span><strong>{p.cnh?.categoria || '—'} / {p.cnh?.ear ? 'Sim' : 'Não'}</strong></div>
         <div><span>Validade</span><strong>{dateOnly(p.cnh?.validade)}</strong></div>
         <div><span>Número CNH</span><strong>{showCnh ? (p.cnh?.numero || 'Não disponível') : '••••••••'} <button className="mam-inline" type="button" onClick={() => setShowCnh(x => !x)}>{showCnh ? 'Ocultar' : 'Conferir'}</button></strong></div>
       </div>
@@ -222,21 +238,57 @@ function Motoristas() {
         <button className="mam-btn mam-btn--danger" disabled={!!action} onClick={() => review('cnh', p._id, 'reprovar')}>Reprovar CNH</button>
       </div>
       <div className="mam-section"><h4>Veículos</h4>
-        {(detail.veiculos || []).map(v => <div className="mam-vehicle" key={v._id}>
-          <div><strong>{[v.marca, v.modelo].filter(Boolean).join(' ') || v.tipo} · {v.placa || 'Sem placa'}</strong><p>{v.tipo} · {v.ano || '—'} · <Status value={v.status} /></p></div>
-          <div className="mam-chips"><button className="mam-btn" disabled={!!action} onClick={() => review('veiculo', v._id, 'aprovar')}>Aprovar</button>
-          <button className="mam-btn mam-btn--quiet" disabled={!!action} onClick={() => review('veiculo', v._id, 'reprovar')}>Reprovar</button>
-          <button className="mam-btn mam-btn--danger" disabled={!!action} onClick={() => review('veiculo', v._id, 'suspender')}>Suspender</button></div>
-        </div>)}
+        {(detail.veiculos || []).map(v => {
+          const docs=(detail.documentos||[]).filter(d=>String(d.veiculoId||'')===String(v._id))
+            .sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+          const crlv=docs.find(d=>d.tipo==='crlv');
+          const tipoFoto=v.tipo==='moto'?'foto_traseira_placa':'foto_frente_placa';
+          const foto=docs.find(d=>d.tipo===tipoFoto);
+          const desde=new Date(v.dadosAtualizadosEm||0).getTime();
+          const crlvAtual=!!crlv&&new Date(crlv.createdAt).getTime()>=desde;
+          const fotoAtual=!!foto&&new Date(foto.createdAt).getTime()>=desde;
+          const podeAprovar=crlvAtual&&fotoAtual&&!!placasConferidas[v._id];
+          return <div className="mam-vehicle" key={v._id}>
+            <div><strong>{[v.marca, v.modelo].filter(Boolean).join(' ') || v.tipo} · {v.placa || 'Sem placa'}</strong>
+              <p>{v.tipo} · {v.ano || '—'} · <Status value={v.status} /></p>
+              <p><strong>Proprietário no CRLV:</strong> {v.proprietarioTerceiro ? 'terceiro (não impede a análise)' : 'não informado como terceiro'}</p>
+              {v.placaConferidaEm && <p>Placa conferida pelo administrador em {dateLabel(v.placaConferidaEm)}.</p>}
+            </div>
+            <div className="mam-section">
+              <h4>Conferência obrigatória da placa e do CRLV</h4>
+              <p>Compare a placa visível na foto {v.tipo==='moto'?'traseira':'frontal'} com a placa do CRLV e do cadastro: <strong>{v.placa}</strong>. Confira também marca, modelo e características. Estar em nome de terceiros, por si só, não reprova o veículo.</p>
+              <div className="mam-chips">
+                {foto ? <button type="button" className="mam-btn mam-btn--quiet" disabled={!!action} onClick={()=>previewDocumento(foto)}>{v.tipo==='moto'?'Ver traseira da moto e placa':'Ver foto frontal com placa'} {fotoAtual?'':'(antiga)'}</button> : <span>Foto com placa: não enviada</span>}
+                {crlv ? <button type="button" className="mam-btn mam-btn--quiet" disabled={!!action} onClick={()=>previewDocumento(crlv)}>Ver CRLV {crlvAtual?'':'(antigo)'}</button> : <span>CRLV: não enviado</span>}
+              </div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:12,marginTop:12}}>
+                {[foto,crlv].filter(Boolean).map(doc=>previews[doc._id] && <div key={doc._id} style={{flex:'1 1 260px',minWidth:0}}>
+                  <strong>{doc.tipo==='crlv'?'CRLV':'Foto do veículo com placa'}</strong>
+                  {previews[doc._id].mime==='application/pdf'
+                    ? <iframe title="CRLV para conferência" src={previews[doc._id].url} style={{width:'100%',height:320,border:'1px solid #ccc',borderRadius:8}} />
+                    : <img alt={doc.tipo==='crlv'?'Imagem do CRLV':'Foto do veículo mostrando a placa'} src={previews[doc._id].url} style={{display:'block',width:'100%',maxHeight:370,objectFit:'contain',borderRadius:8,border:'1px solid #ccc'}} />}
+                </div>)}
+              </div>
+              <label className="mam-check" style={{display:'flex',alignItems:'flex-start',gap:10,marginTop:12}}>
+                <input type="checkbox" disabled={!crlvAtual||!fotoAtual||!!action} checked={!!placasConferidas[v._id]}
+                  onChange={e=>setPlacasConferidas(prev=>({...prev,[v._id]:e.target.checked}))} />
+                <span>Conferi pessoalmente a foto {v.tipo==='moto'?'traseira':'frontal'}, a placa <strong>{v.placa}</strong> e o CRLV. Confirmo que se referem ao mesmo veículo.</span>
+              </label>
+            </div>
+            <div className="mam-chips"><button className="mam-btn" disabled={!!action||!podeAprovar} onClick={() => review('veiculo', v._id, 'aprovar')}>Aprovar veículo</button>
+              <button className="mam-btn mam-btn--quiet" disabled={!!action} onClick={() => review('veiculo', v._id, 'reprovar')}>Reprovar</button>
+              <button className="mam-btn mam-btn--danger" disabled={!!action} onClick={() => review('veiculo', v._id, 'suspender')}>Suspender</button></div>
+          </div>;
+        })}
         {!detail.veiculos?.length && <Empty>O motorista ainda não cadastrou veículos.</Empty>}
       </div>
-      <div className="mam-section"><h4>Modalidades autorizadas</h4><p>Selecione as modalidades do cadastro. A aprovação administrativa libera individualmente esta conta; verifique as pendências antes de operar comercialmente.</p>
+      <div className="mam-section"><h4>Modalidades autorizadas</h4><p>Marque apenas os serviços que poderão ser oferecidos ao motorista.</p>
         <div className="mam-options">{(p.servicosSolicitados || []).map(s => <label key={s} className="mam-check"><input type="checkbox" checked={approvedServices.includes(s)}
           onChange={e => setApprovedServices(list => e.target.checked ? [...list, s] : list.filter(x => x !== s))} /> {getServiceLabel(s)}</label>)}</div>
         <div className="mam-actionrow"><button className="mam-btn" disabled={!!action || !approvedServices.length} onClick={() => review('perfil', p._id, 'aprovar')}>Aprovar perfil e modalidades</button>
         <button className="mam-btn mam-btn--danger" disabled={!!action} onClick={() => review('perfil', p._id, 'suspender')}>Suspender perfil</button></div>
       </div>
-      <p className="mam-help">A aprovação do cadastro é manual e não exige EAR informado. O motorista aprovado manualmente poderá ficar online com um veículo cadastrado compatível, localização ativa e acesso profissional regular. O backend registra todas as decisões.</p>
+      <p className="mam-help">Ordem recomendada: verificar foto e CNH, conferir foto frontal e placa com o CRLV, aprovar os veículos e só então aprovar as modalidades. O backend registra as decisões.</p>
     </div>}
   </>;
 }
