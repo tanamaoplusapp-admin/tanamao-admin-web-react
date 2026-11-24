@@ -40,3 +40,9 @@ export function mobilityError(error) {
   if (!error?.response) return 'Não foi possível contactar a API. Confira a URL, o Render e sua conexão.';
   return `Não foi possível concluir a operação (HTTP ${code || '?'})`;
 }
+
+export const getDynamicSchedule = () => API.get(`${ROOT}/tarifas/dinamica`).then(r => r.data);
+export const saveDynamicSchedule = body => API.put(`${ROOT}/tarifas/dinamica`, body).then(r => r.data);
+export const deleteDynamicSchedule = body => API.delete(`${ROOT}/tarifas/dinamica`, {data:body}).then(r => r.data);
+
+export const getMobilityOperationalSummary = () => API.get(`${ROOT}/operacao/resumo`).then(r => r.data);

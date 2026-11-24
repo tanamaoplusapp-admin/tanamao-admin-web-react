@@ -11,10 +11,12 @@ import {
   money, dateLabel, dateOnly, centsInput, inputCents, shortLocation, shortId,
 } from './utils';
 import './Mobilidade.css';
+import AgendaDinamica from './AgendaDinamica';
+import { getDynamicSchedule, getMobilityOperationalSummary } from '../../services/mobilidadeAdmin';
 
 const TABS = [
   ['resumo', 'Visão geral'], ['motoristas', 'Motoristas'],
-  ['tarifas', 'Tarifas'], ['cidades-moto', 'Cidades / Moto'], ['corridas', 'Corridas e entregas'], ['demanda', 'Demanda'],
+  ['tarifas', 'Tarifas'], ['dinamica', 'Dinâmica automática'], ['cidades-moto', 'Cidades / Moto'], ['corridas', 'Corridas e entregas'], ['demanda', 'Demanda'],
 ];
 const POSITIVE = new Set(['aprovado', 'concluida', 'confirmado_cliente']);
 const NEGATIVE = new Set(['reprovado', 'suspenso', 'cancelada', 'contestado']);
@@ -37,7 +39,7 @@ export default function MobilidadeAdmin() {
   const [params, setParams] = useSearchParams();
   const maybeTab = params.get('aba');
   const tab = TABS.some(([key]) => key === maybeTab) ? maybeTab : 'resumo';
-  const changeTab = key => setParams({ aba: key });
+  const changeTab = (key, filtro) => setParams({ aba: key, ...(filtro ? { filtro } : {}) });
 
   return <section className="mam-root">
     <div className="mam-heading">
@@ -59,6 +61,7 @@ export default function MobilidadeAdmin() {
     {tab === 'resumo' && <Resumo go={changeTab} />}
     {tab === 'motoristas' && <Motoristas />}
     {tab === 'tarifas' && <Tarifas />}
+    {tab === 'dinamica' && <AgendaDinamica />}
     {tab === 'cidades-moto' && <CidadesMoto />}
     {tab === 'corridas' && <Corridas />}
     {tab === 'demanda' && <Demanda />}
@@ -76,9 +79,11 @@ function Resumo({ go }) {
       getMobilityProfiles({ status: 'aprovado' }),
       getMobilityTariffs(),
       getMobilityJobs(),
+      getDynamicSchedule(),
+      getMobilityOperationalSummary(),
     ]);
     const next = {}, nextErrors = [];
-    ['pendentes', 'aprovados', 'tarifas', 'viagens'].forEach((key, index) => {
+    ['pendentes', 'aprovados', 'tarifas', 'viagens', 'dinamica', 'operacao'].forEach((key, index) => {
       const item = settled[index];
       if (item.status === 'fulfilled') next[key] = item.value;
       else nextErrors.push(mobilityError(item.reason));
@@ -87,20 +92,36 @@ function Resumo({ go }) {
     setErrors([...new Set(nextErrors)]);
     setLoading(false);
   }, []);
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { refresh(); const timer = setInterval(() => { if (!document.hidden) refresh(); }, 60000); return () => clearInterval(timer); }, [refresh]);
   const jobs = data.viagens?.solicitacoes || [];
   const activeJobs = jobs.filter(x => ['procurando', 'ofertada', 'aceita', 'no_local', 'em_andamento'].includes(x.status));
   const counts = [
     { title: 'Motoristas em análise', number: data.pendentes?.total, info: 'Aguardando decisão administrativa', click: 'motoristas' },
     { title: 'Motoristas aprovados', number: data.aprovados?.total, info: 'Perfis aprovados (não necessariamente online)', click: 'motoristas' },
     { title: 'Tarifas ativas', number: data.tarifas?.tarifas?.filter(x => x.ativo).length, info: 'Modalidades e regiões com preço cadastrado', click: 'tarifas' },
-    { title: 'Viagens ativas', number: data.viagens ? activeJobs.length : undefined, info: 'Na amostra das 100 solicitações mais recentes', click: 'corridas' },
+    { title: 'Viagens ativas', number: data.operacao?.viagensAtivas ?? (data.viagens ? activeJobs.length : undefined), info: data.operacao ? 'Total operacional (exclui testes marcados)' : 'Na amostra das 100 solicitações mais recentes', click: 'corridas' },
   ];
   return <>
     <div className="mam-toolbar"><div><h2>Visão geral</h2><p>Dados consultados diretamente no backend</p></div><button className="mam-btn mam-btn--quiet" onClick={refresh} disabled={loading}>↻ Atualizar</button></div>
     {errors.map(err => <Notice key={err} message={err} />)}
     <div className="mam-stats">{counts.map(x => <button key={x.title} className="mam-stat" onClick={() => go(x.click)}>
       <span>{x.title}</span><strong>{x.number === undefined ? (loading ? '…' : '—') : x.number}</strong><small>{x.info}</small></button>)}</div>
+    <div className="mam-card mam-automation-summary"><div className="mam-card-title"><h3>Assistente operacional</h3><span className="mam-status mam-status--neutral">Atualiza a cada minuto com a página aberta</span></div>
+      <p>{data.dinamica ? (data.dinamica.bloqueioAmbiente ? 'Dinâmica bloqueada no ambiente do Render.' : (data.dinamica.registros?.find(x=>x.uf==='*')?.ativo ?? data.dinamica.padrao?.ativo) ? 'Dinâmica nacional automática ligada. Os horários são calculados no servidor, mesmo com o painel fechado.' : 'Dinâmica nacional desligada.') : 'Estado da automação não confirmado.'}</p>
+      <p>{data.pendentes?.total === undefined ? 'Fila de motoristas indisponível.' : `${data.pendentes.total} motorista(s) aguardando sua decisão.`} Aprovações continuam manuais.</p>
+      <p>{data.viagens ? `${jobs.filter(x=>['procurando','ofertada'].includes(x.status)).length} solicitação(ões) em busca de motorista entre as 100 mais recentes.` : 'Fila de viagens indisponível.'}</p>
+      <div className="mam-actionrow"><button className="mam-btn mam-btn--outline" onClick={()=>go('dinamica')}>Controlar automação</button><button className="mam-btn mam-btn--outline" onClick={()=>go('motoristas')}>Revisar pendências</button><button className="mam-btn mam-btn--outline" onClick={()=>go('corridas')}>Acompanhar corridas</button></div>
+    </div>
+    {data.operacao && <div className="mam-card mam-automation-summary"><div className="mam-card-title"><div><h3>Fila de atenção</h3><p>Contagem do banco · {dateLabel(data.operacao.consultadoEm)}</p></div></div><div className="mam-attention-list">{[
+      ['Motoristas para revisar',data.operacao.motoristasPendentes,'motoristas','Pendência manual','em_analise'],
+      ['Cidades / moto para revisar',data.operacao.cidadesMotoPendentes,'cidades-moto','Pendência manual','pendente'],
+      ['CNHs vencidas em perfis aprovados',data.operacao.cnhVencidas,'motoristas','Prioridade','aprovado'],
+      ['CRLVs vencidos em veículos aprovados',data.operacao.crlvVencidos,'motoristas','Prioridade','aprovado'],
+      ['CNHs vencendo em 30 dias',data.operacao.cnhAVencer,'motoristas','Preventivo','aprovado'],
+      ['CRLVs vencendo em 30 dias',data.operacao.crlvAVencer,'motoristas','Preventivo','aprovado'],
+      ['Buscas de motorista há 5 min ou mais',data.operacao.buscaDemorada,'corridas','Acompanhar'],
+      ['Solicitações sem motorista nas últimas 24h',data.operacao.semMotorista24h,'corridas','Acompanhar','sem_motorista'],
+    ].map(([label,count,tab,tag,filtro])=><button key={label} type="button" className="mam-attention-item" onClick={()=>go(tab,filtro)}><span><strong>{label}</strong><small>{tag} · Abrir seção</small></span><span className={`mam-status ${count?'mam-status--bad':'mam-status--good'}`}>{count}</span></button>)}</div><p className="mam-help">Indicadores de validade consideram documentos com data cadastrada e registros aprovados. São avisos; não aprovam, suspendem nem cancelam automaticamente.</p></div>}
     <div className="mam-two-col">
       <div className="mam-card"><div className="mam-card-title"><h3>Próximas ações</h3></div>
         <p>Revise CNH, foto, veículo e modalidades antes de liberar um motorista.</p>
@@ -116,7 +137,8 @@ function Resumo({ go }) {
 }
 
 function Motoristas() {
-  const [status, setStatus] = useState('em_analise');
+  const [params] = useSearchParams();
+  const [status, setStatus] = useState(params.get('filtro') === 'aprovado' ? 'aprovado' : 'em_analise');
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
@@ -361,7 +383,7 @@ function Tarifas() {
         </div>
         <div className="mam-options mam-options--stack">
           <label className="mam-check"><input type="checkbox" checked={form.ativo} onChange={e => setField('ativo', e.target.checked)} /> Tarifa ativa</label>
-          <label className="mam-check"><input type="checkbox" checked={form.dinamicaAtiva} onChange={e => setField('dinamicaAtiva', e.target.checked)} /> Permitir preço dinâmico baseado em solicitações reais</label>
+          <label className="mam-check"><input type="checkbox" checked={form.dinamicaAtiva} onChange={e => setField('dinamicaAtiva', e.target.checked)} /> Permitir adicional por demanda real (a agenda automática é gerenciada na aba Dinâmica automática)</label>
         </div>
         <p className="mam-help">O backend determina o valor final por distância, tempo e regras tarifárias. O pagamento da viagem permanece direto ao motorista. Moto deve ter tarifa mais acessível que carro.</p>
         <div className="mam-actionrow"><button type="submit" className="mam-btn" disabled={busy}>{busy ? 'Salvando…' : 'Salvar tarifa'}</button>
@@ -386,7 +408,8 @@ function Tarifas() {
 }
 
 function Corridas() {
-  const [status, setStatus] = useState('');
+  const [params] = useSearchParams();
+  const [status, setStatus] = useState(params.get('filtro') === 'sem_motorista' ? 'sem_motorista' : '');
   const [rows, setRows] = useState([]);
   const [selected, setSelected] = useState(null);
   const [reason, setReason] = useState('');
@@ -486,10 +509,11 @@ function Demanda() {
 }
 
 function CidadesMoto() {
+  const [params] = useSearchParams();
   const [rows,setRows]=useState([]);
   const [page,setPage]=useState(1);
   const [total,setTotal]=useState(0);
-  const [status,setStatus]=useState('');
+  const [status,setStatus]=useState(params.get('filtro') === 'pendente' ? 'pendente' : '');
   const [busca,setBusca]=useState('');
   const [buscaAplicada,setBuscaAplicada]=useState('');
   const [selected,setSelected]=useState(null);

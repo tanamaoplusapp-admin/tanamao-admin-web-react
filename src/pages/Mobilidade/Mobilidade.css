@@ -107,3 +107,13 @@
 .mam-moto-confirm input { margin-top:3px; flex:0 0 15px; }
 .mam-small { color:#7d8b7c; font-size:11px; margin-top:5px; }
 
+
+.mam-automation-summary {margin:16px 0;}
+.mam-dyn-fieldset {border:0;padding:0;margin:0;min-width:0;}
+.mam-dyn-table td small {display:block;color:#708374;margin-top:4px;}
+.mam-dyn-table input {width:88px;max-width:100%;padding:8px;border:1px solid #d7e2d9;border-radius:8px;font:inherit;}
+.mam-dyn-fieldset .mam-gridform {margin-top:16px;}
+
+.mam-attention-list {display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:8px;}
+.mam-attention-item {display:flex;align-items:center;justify-content:space-between;text-align:left;gap:10px;padding:12px;border:1px solid #dce7df;border-radius:10px;background:#fff;color:#274632;cursor:pointer;font:inherit;}
+.mam-attention-item small {display:block;color:#708374;margin-top:4px;}
