@@ -20,34 +20,34 @@ const COLORS = {
   greenDark: "#1D3A22",
   greenStrong: "#17391F",
 
-  greenSoft: "#E7F0E7",
-  greenSoft2: "#F3F8F3",
+  greenSoft: "var(--ad-soft)",
+  greenSoft2: "var(--ad-raised)",
 
   orange: "#FF9900",
   orangeDark: "#A85A00",
-  orangeSoft: "#FFF1DD",
+  orangeSoft: "var(--ad-warn-bg)",
 
   blue: "#2563EB",
-  blueSoft: "#EFF6FF",
+  blueSoft: "var(--ad-blue-bg)",
 
   purple: "#7C3AED",
-  purpleSoft: "#F5F3FF",
+  purpleSoft: "var(--ad-purple-bg)",
 
   red: "#DC2626",
-  redSoft: "#FEF2F2",
+  redSoft: "var(--ad-danger-bg)",
 
   yellow: "#D97706",
-  yellowSoft: "#FFF7E6",
+  yellowSoft: "var(--ad-warn-bg)",
 
-  surface: "#FFFFFF",
-  background: "#EEF3EE",
+  surface: "var(--ad-surface)",
+  background: "var(--ad-bg)",
 
-  text: "#182018",
-  muted: "#6B7280",
-  subtle: "#9CA3AF",
+  text: "var(--ad-text)",
+  muted: "var(--ad-muted)",
+  subtle: "var(--ad-subtle)",
 
-  border: "#DDE5DD",
-  borderSoft: "#E7ECE7",
+  border: "var(--ad-border)",
+  borderSoft: "var(--ad-border)",
 };
 
 /* =========================================================
@@ -663,7 +663,7 @@ export default function Finance() {
                 )}
                 subtitle="Primeiros 300 grátis"
                 color={
-                  COLORS.blue
+                  "var(--ad-blue)"
                 }
                 iconBackground={
                   COLORS.blueSoft
@@ -678,7 +678,7 @@ export default function Finance() {
                 )}
                 subtitle="Com mensalidade ativa"
                 color={
-                  COLORS.green
+                  "var(--ad-accent-text)"
                 }
                 iconBackground={
                   COLORS.greenSoft
@@ -698,7 +698,7 @@ export default function Finance() {
                   1
                 )}% da base financeira`}
                 color={
-                  COLORS.red
+                  "var(--ad-danger)"
                 }
                 iconBackground={
                   COLORS.redSoft
@@ -719,7 +719,7 @@ export default function Finance() {
                 )}
                 subtitle="Receita do dia"
                 color={
-                  COLORS.greenDark
+                  "var(--ad-accent-text)"
                 }
                 iconBackground={
                   COLORS.greenSoft
@@ -734,7 +734,7 @@ export default function Finance() {
                 )}
                 subtitle="Acumulado semanal"
                 color={
-                  COLORS.greenDark
+                  "var(--ad-accent-text)"
                 }
                 iconBackground={
                   COLORS.greenSoft
@@ -749,7 +749,7 @@ export default function Finance() {
                 )}
                 subtitle="Acumulado mensal"
                 color={
-                  COLORS.greenDark
+                  "var(--ad-accent-text)"
                 }
                 iconBackground={
                   COLORS.greenSoft
@@ -811,7 +811,7 @@ export default function Finance() {
                     percentualComissoes
                   }
                   color={
-                    COLORS.orange
+                    "var(--ad-warn)"
                   }
                   background={
                     COLORS.orangeSoft
@@ -828,7 +828,7 @@ export default function Finance() {
                     percentualMensalidades
                   }
                   color={
-                    COLORS.green
+                    "var(--ad-accent-text)"
                   }
                   background={
                     COLORS.greenSoft
@@ -852,7 +852,7 @@ export default function Finance() {
                 )}
                 icon="↗"
                 color={
-                  COLORS.orangeDark
+                  "var(--ad-warn)"
                 }
                 background={
                   COLORS.orangeSoft
@@ -870,7 +870,7 @@ export default function Finance() {
                 )}
                 icon="▤"
                 color={
-                  COLORS.green
+                  "var(--ad-accent-text)"
                 }
                 background={
                   COLORS.greenSoft
@@ -1600,7 +1600,7 @@ const GLOBAL_CSS = `
     margin-bottom: 4px;
 
     color:
-      #BFD3C0;
+      var(--ad-subtle);
 
     font-size: 9px;
 
@@ -1629,7 +1629,7 @@ const GLOBAL_CSS = `
       7px 0 0;
 
     color:
-      #D7E4D8;
+      var(--ad-subtle);
 
     font-size: 12px;
 
@@ -1744,7 +1744,7 @@ const GLOBAL_CSS = `
     margin-top: 16px;
 
     color:
-      #D3E0D4;
+      var(--ad-subtle);
 
     font-size: 9px;
   }
@@ -1837,7 +1837,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      #C4D5C6;
+      var(--ad-subtle);
 
     font-size: 8px;
 
@@ -1883,7 +1883,7 @@ const GLOBAL_CSS = `
 
     border:
       1px solid
-      #FECACA;
+      var(--ad-border);
 
     border-radius: 14px;
 
@@ -1914,10 +1914,10 @@ const GLOBAL_CSS = `
     border-radius: 10px;
 
     background:
-      #FEE2E2;
+      var(--ad-raised);
 
     color:
-      ${COLORS.red};
+      var(--ad-danger);
 
     font-weight: 900;
   }
@@ -1926,7 +1926,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      #991B1B;
+      var(--ad-danger);
 
     font-size: 10px;
   }
@@ -1937,7 +1937,7 @@ const GLOBAL_CSS = `
     margin-top: 2px;
 
     color:
-      #B45353;
+      var(--ad-danger);
 
     font-size: 9px;
   }
@@ -1998,7 +1998,7 @@ const GLOBAL_CSS = `
       ${COLORS.orangeSoft};
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 13px;
 
@@ -2009,7 +2009,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 8px;
 
@@ -2024,7 +2024,7 @@ const GLOBAL_CSS = `
       2px 0 0;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 19px;
 
@@ -2090,7 +2090,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 8px;
 
@@ -2106,7 +2106,7 @@ const GLOBAL_CSS = `
     margin-top: 5px;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 30px;
 
@@ -2185,7 +2185,7 @@ const GLOBAL_CSS = `
     border-radius: 11px;
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
 
     border:
       1px solid
@@ -2207,7 +2207,7 @@ const GLOBAL_CSS = `
     margin-top: 3px;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 11px;
 
@@ -2245,7 +2245,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 7px;
 
@@ -2260,7 +2260,7 @@ const GLOBAL_CSS = `
       3px 0 0;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 15px;
 
@@ -2277,7 +2277,7 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 12px;
 
@@ -2329,7 +2329,7 @@ const GLOBAL_CSS = `
     border-radius: 10px;
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
 
     border:
       1px solid
@@ -2351,7 +2351,7 @@ const GLOBAL_CSS = `
     margin-top: 3px;
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 14px;
 
@@ -2360,7 +2360,7 @@ const GLOBAL_CSS = `
 
   .finance-health-bottom strong.danger {
     color:
-      ${COLORS.red};
+      var(--ad-danger);
   }
 
   /* =======================================================
@@ -2408,7 +2408,7 @@ const GLOBAL_CSS = `
       translateY(-2px);
 
     border-color:
-      #CDD9CE;
+      var(--ad-border);
 
     box-shadow:
       0 8px 22px
@@ -2548,14 +2548,14 @@ const GLOBAL_CSS = `
 
     border:
       1px solid
-      #DCE8DC;
+      var(--ad-border);
   }
 
   .finance-composition-summary span {
     display: block;
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 7px;
 
@@ -2571,7 +2571,7 @@ const GLOBAL_CSS = `
     margin-top: 4px;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 21px;
 
@@ -2629,7 +2629,7 @@ const GLOBAL_CSS = `
     border-radius: 12px;
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
   }
 
   .finance-source-top {
@@ -2901,7 +2901,7 @@ const GLOBAL_CSS = `
       translateY(-2px);
 
     border-color:
-      #C8D7C9;
+      var(--ad-border);
 
     box-shadow:
       0 8px 22px
@@ -2910,7 +2910,7 @@ const GLOBAL_CSS = `
 
   .finance-quick-action.featured {
     border-color:
-      #F3C983;
+      var(--ad-border);
 
     background:
       linear-gradient(
@@ -2938,7 +2938,7 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
   }
 
   .finance-quick-action.featured
@@ -2959,7 +2959,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 7px;
 
@@ -2975,7 +2975,7 @@ const GLOBAL_CSS = `
     margin-top: 2px;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 11px;
 
@@ -2997,7 +2997,7 @@ const GLOBAL_CSS = `
 
   .finance-quick-action-arrow {
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 17px;
 
@@ -3033,7 +3033,7 @@ const GLOBAL_CSS = `
       ${COLORS.border};
 
     border-top-color:
-      ${COLORS.orange};
+      var(--ad-warn);
 
     border-radius: 50%;
 
@@ -3045,7 +3045,7 @@ const GLOBAL_CSS = `
 
   .finance-loading strong {
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 13px;
   }

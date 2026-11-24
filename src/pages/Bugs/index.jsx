@@ -22,7 +22,7 @@ function Card({
         style={{
           ...cardValue,
           color:
-            color || "#111827",
+            color || "var(--ad-text)",
         }}
       >
         {value}
@@ -614,7 +614,7 @@ export default function Bugs() {
               <tr
                 style={{
                   background:
-                    "#F8FAFC",
+                    "var(--ad-raised)",
                 }}
               >
                 <th style={th}>
@@ -918,7 +918,7 @@ export default function Bugs() {
                       textAlign:
                         "center",
                       color:
-                        "#64748B",
+                        "var(--ad-muted)",
                       padding: 30,
                     }}
                     colSpan={10}
@@ -1149,7 +1149,7 @@ function shortId(id) {
 
 const page = {
   padding: 24,
-  background: "#F8FAFC",
+  background: "var(--ad-raised)",
   minHeight: "100vh",
 };
 
@@ -1161,11 +1161,11 @@ const title = {
   margin: 0,
   fontSize: 26,
   fontWeight: 900,
-  color: "#111827",
+  color: "var(--ad-text)",
 };
 
 const subtitle = {
-  color: "#64748B",
+  color: "var(--ad-muted)",
   marginTop: 6,
 };
 
@@ -1203,11 +1203,11 @@ const metricsGrid = {
 };
 
 const cardStyle = {
-  background: "#FFFFFF",
+  background: "var(--ad-surface)",
   borderRadius: 18,
   padding: 20,
   border:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   boxShadow:
     "0 2px 8px rgba(0,0,0,0.04)",
 };
@@ -1215,7 +1215,7 @@ const cardStyle = {
 const cardTitle = {
   fontSize: 12,
   fontWeight: 700,
-  color: "#64748B",
+  color: "var(--ad-muted)",
   marginBottom: 8,
   textTransform:
     "uppercase",
@@ -1231,7 +1231,7 @@ const cardValue = {
 const cardSubtitle = {
   marginTop: 8,
   fontSize: 12,
-  color: "#94A3B8",
+  color: "var(--ad-muted)",
 };
 
 const filters = {
@@ -1246,29 +1246,29 @@ const input = {
   padding: "11px 13px",
   borderRadius: 10,
   border:
-    "1px solid #D1D5DB",
-  background: "#FFFFFF",
+    "1px solid var(--ad-border)",
+  background: "var(--ad-surface)",
 };
 
 const select = {
   padding: "11px 13px",
   borderRadius: 10,
   border:
-    "1px solid #D1D5DB",
-  background: "#FFFFFF",
+    "1px solid var(--ad-border)",
+  background: "var(--ad-surface)",
 };
 
 const resultInfo = {
   fontSize: 12,
-  color: "#64748B",
+  color: "var(--ad-muted)",
   marginBottom: 12,
 };
 
 const tableWrapper = {
-  background: "#FFFFFF",
+  background: "var(--ad-surface)",
   borderRadius: 16,
   border:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   overflow: "hidden",
 };
 
@@ -1288,16 +1288,16 @@ const th = {
   textAlign: "left",
   fontSize: 12,
   fontWeight: 800,
-  color: "#64748B",
+  color: "var(--ad-muted)",
   borderBottom:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   whiteSpace: "nowrap",
 };
 
 const td = {
   padding: 14,
   borderTop:
-    "1px solid #F1F5F9",
+    "1px solid var(--ad-border)",
   verticalAlign: "top",
   fontSize: 13,
 };
@@ -1309,25 +1309,25 @@ const row = {
 
 const primaryText = {
   fontWeight: 700,
-  color: "#111827",
+  color: "var(--ad-text)",
 };
 
 const errorType = {
   fontWeight: 800,
-  color: "#991B1B",
+  color: "var(--ad-danger)",
 };
 
 const errorMessage = {
   marginTop: 4,
   maxWidth: 330,
-  color: "#334155",
+  color: "var(--ad-text)",
   lineHeight: 1.4,
 };
 
 const mutedText = {
   marginTop: 4,
   fontSize: 11,
-  color: "#94A3B8",
+  color: "var(--ad-muted)",
   overflowWrap:
     "anywhere",
 };
@@ -1337,8 +1337,8 @@ const roleText = {
   display: "inline-block",
   padding: "3px 7px",
   borderRadius: 999,
-  background: "#F1F5F9",
-  color: "#475569",
+  background: "var(--ad-raised)",
+  color: "var(--ad-text)",
   fontSize: 10,
   fontWeight: 700,
 };
@@ -1348,23 +1348,23 @@ const severityBadge = (
 ) => ({
   background:
     severity === "critical"
-      ? "#FEE2E2"
+      ? "var(--ad-raised)"
       : severity ===
         "medium"
       ? "#FEF3C7"
       : severity === "low"
       ? "#DCFCE7"
-      : "#E2E8F0",
+      : "var(--ad-raised)",
 
   color:
     severity === "critical"
-      ? "#991B1B"
+      ? "var(--ad-danger)"
       : severity ===
         "medium"
-      ? "#92400E"
+      ? "var(--ad-warn)"
       : severity === "low"
-      ? "#166534"
-      : "#334155",
+      ? "var(--ad-accent-text)"
+      : "var(--ad-text)",
 
   padding: "5px 9px",
   borderRadius: 6,
@@ -1386,17 +1386,17 @@ const statusBadge = (
       : status ===
         "in_progress"
       ? "#DBEAFE"
-      : "#E2E8F0",
+      : "var(--ad-raised)",
 
   color:
     status === "resolved"
-      ? "#166534"
+      ? "var(--ad-accent-text)"
       : status === "open"
-      ? "#92400E"
+      ? "var(--ad-warn)"
       : status ===
         "in_progress"
-      ? "#1D4ED8"
-      : "#334155",
+      ? "var(--ad-blue)"
+      : "var(--ad-text)",
 
   padding: "5px 9px",
   borderRadius: 6,

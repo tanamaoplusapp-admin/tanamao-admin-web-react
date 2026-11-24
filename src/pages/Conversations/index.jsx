@@ -24,34 +24,34 @@ const COLORS = {
   greenDark: "#1D3A22",
   greenStrong: "#17391F",
 
-  greenSoft: "#E7F0E7",
-  greenSoft2: "#F3F8F3",
+  greenSoft: "var(--ad-soft)",
+  greenSoft2: "var(--ad-raised)",
 
   orange: "#FF9900",
   orangeDark: "#A85A00",
-  orangeSoft: "#FFF1DD",
+  orangeSoft: "var(--ad-warn-bg)",
 
   blue: "#2563EB",
-  blueSoft: "#EFF6FF",
+  blueSoft: "var(--ad-blue-bg)",
 
   purple: "#7C3AED",
-  purpleSoft: "#F5F3FF",
+  purpleSoft: "var(--ad-purple-bg)",
 
   red: "#DC2626",
-  redSoft: "#FEF2F2",
+  redSoft: "var(--ad-danger-bg)",
 
   yellow: "#D97706",
-  yellowSoft: "#FFF7E6",
+  yellowSoft: "var(--ad-warn-bg)",
 
-  surface: "#FFFFFF",
-  background: "#EEF3EE",
+  surface: "var(--ad-surface)",
+  background: "var(--ad-bg)",
 
-  text: "#182018",
-  muted: "#6B7280",
-  subtle: "#9CA3AF",
+  text: "var(--ad-text)",
+  muted: "var(--ad-muted)",
+  subtle: "var(--ad-subtle)",
 
-  border: "#DDE5DD",
-  borderSoft: "#E7ECE7",
+  border: "var(--ad-border)",
+  borderSoft: "var(--ad-border)",
 };
 
 /* =========================================================
@@ -579,7 +579,7 @@ export default function Conversations() {
             }
             subtitle="Conversas registradas"
             color={
-              COLORS.greenDark
+              "var(--ad-accent-text)"
             }
             background={
               COLORS.greenSoft
@@ -603,7 +603,7 @@ export default function Conversations() {
             }
             subtitle="Precisam de acompanhamento"
             color={
-              COLORS.orangeDark
+              "var(--ad-warn)"
             }
             background={
               COLORS.orangeSoft
@@ -627,7 +627,7 @@ export default function Conversations() {
             }
             subtitle="Atendimentos concluídos"
             color={
-              COLORS.green
+              "var(--ad-accent-text)"
             }
             background={
               COLORS.greenSoft
@@ -651,7 +651,7 @@ export default function Conversations() {
             }
             subtitle="Atualizadas nas últimas 24h"
             color={
-              COLORS.blue
+              "var(--ad-blue)"
             }
             background={
               COLORS.blueSoft
@@ -1391,7 +1391,7 @@ function ConversationStatus({
             "Aberta",
 
           color:
-            "#92400E",
+            "var(--ad-warn)",
 
           background:
             "#FEF3C7",
@@ -1406,7 +1406,7 @@ function ConversationStatus({
             "Encerrada",
 
           color:
-            "#15803D",
+            "var(--ad-accent-text)",
 
           background:
             "#DCFCE7",
@@ -1419,10 +1419,10 @@ function ConversationStatus({
             status || "—",
 
           color:
-            "#4B5563",
+            "var(--ad-text)",
 
           background:
-            "#F3F4F6",
+            "var(--ad-raised)",
 
           dot:
             "#9CA3AF",
@@ -1877,7 +1877,7 @@ const GLOBAL_CSS = `
     margin-bottom: 4px;
 
     color:
-      #BFD3C0;
+      var(--ad-subtle);
 
     font-size: 9px;
 
@@ -1906,7 +1906,7 @@ const GLOBAL_CSS = `
       7px 0 0;
 
     color:
-      #D7E4D8;
+      var(--ad-subtle);
 
     font-size: 12px;
 
@@ -2019,7 +2019,7 @@ const GLOBAL_CSS = `
     margin-top: 16px;
 
     color:
-      #D3E0D4;
+      var(--ad-subtle);
 
     font-size: 9px;
   }
@@ -2114,7 +2114,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      #C4D5C6;
+      var(--ad-subtle);
 
     font-size: 8px;
 
@@ -2152,7 +2152,7 @@ const GLOBAL_CSS = `
     padding: 13px;
 
     border:
-      1px solid #FECACA;
+      1px solid var(--ad-border);
 
     border-radius: 14px;
 
@@ -2184,10 +2184,10 @@ const GLOBAL_CSS = `
     border-radius: 10px;
 
     background:
-      #FEE2E2;
+      var(--ad-raised);
 
     color:
-      ${COLORS.red};
+      var(--ad-danger);
 
     font-weight: 900;
   }
@@ -2196,7 +2196,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      #991B1B;
+      var(--ad-danger);
 
     font-size: 10px;
   }
@@ -2207,7 +2207,7 @@ const GLOBAL_CSS = `
     margin-top: 2px;
 
     color:
-      #B45353;
+      var(--ad-danger);
 
     font-size: 9px;
   }
@@ -2268,7 +2268,7 @@ const GLOBAL_CSS = `
       ${COLORS.orangeSoft};
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 14px;
 
@@ -2281,7 +2281,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 8px;
 
@@ -2296,7 +2296,7 @@ const GLOBAL_CSS = `
       2px 0 0;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 19px;
 
@@ -2371,7 +2371,7 @@ const GLOBAL_CSS = `
       translateY(-2px);
 
     border-color:
-      #CDD9CE;
+      var(--ad-border);
 
     box-shadow:
       0 8px 22px
@@ -2380,10 +2380,10 @@ const GLOBAL_CSS = `
 
   .conversations-summary-card.active {
     border-color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     background:
-      #F7FAF7;
+      var(--ad-soft);
   }
 
   .conversations-summary-card-top {
@@ -2425,7 +2425,7 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 7px;
 
@@ -2483,7 +2483,7 @@ const GLOBAL_CSS = `
       ${COLORS.borderSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 8px;
 
@@ -2506,7 +2506,7 @@ const GLOBAL_CSS = `
     padding: 14px;
 
     border:
-      1px solid #F3D19B;
+      1px solid var(--ad-border);
 
     border-radius: 16px;
 
@@ -2533,10 +2533,10 @@ const GLOBAL_CSS = `
     border-radius: 13px;
 
     background:
-      #FFFFFF;
+      var(--ad-surface);
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 17px;
 
@@ -2552,7 +2552,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 7px;
 
@@ -2569,7 +2569,7 @@ const GLOBAL_CSS = `
     margin-top: 2px;
 
     color:
-      #7C4700;
+      var(--ad-warn);
 
     font-size: 11px;
   }
@@ -2579,7 +2579,7 @@ const GLOBAL_CSS = `
       3px 0 0;
 
     color:
-      #95631E;
+      var(--ad-warn);
 
     font-size: 8px;
   }
@@ -2625,7 +2625,7 @@ const GLOBAL_CSS = `
     padding: 13px;
 
     border:
-      1px solid #CFE2D0;
+      1px solid var(--ad-border);
 
     border-radius: 15px;
 
@@ -2647,10 +2647,10 @@ const GLOBAL_CSS = `
     border-radius: 11px;
 
     background:
-      #FFFFFF;
+      var(--ad-surface);
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-weight: 900;
   }
@@ -2659,7 +2659,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 10px;
   }
@@ -2670,7 +2670,7 @@ const GLOBAL_CSS = `
     margin-top: 2px;
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 8px;
   }
@@ -2732,7 +2732,7 @@ const GLOBAL_CSS = `
       translateY(-50%);
 
     color:
-      ${COLORS.orange};
+      var(--ad-warn);
 
     font-size: 17px;
 
@@ -2758,7 +2758,7 @@ const GLOBAL_CSS = `
     outline: none;
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
 
     color:
       ${COLORS.text};
@@ -2769,7 +2769,7 @@ const GLOBAL_CSS = `
   .conversations-search:focus,
   .conversations-select:focus {
     border-color:
-      #AFC5B0;
+      var(--ad-border);
 
     box-shadow:
       0 0 0 3px
@@ -2804,7 +2804,7 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     cursor: pointer;
 
@@ -2859,7 +2859,7 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-weight: 900;
   }
@@ -2936,14 +2936,14 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 7px;
   }
 
   .conversations-chip.active {
     border-color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     background:
       ${COLORS.green};
@@ -2965,7 +2965,7 @@ const GLOBAL_CSS = `
       ${COLORS.orangeSoft};
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
   }
 
   /* =======================================================
@@ -2992,7 +2992,7 @@ const GLOBAL_CSS = `
       ${COLORS.borderSoft};
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
 
     color:
       ${COLORS.muted};
@@ -3003,7 +3003,7 @@ const GLOBAL_CSS = `
   .conversations-result-bar
   strong {
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
   }
 
   .conversations-result-bar
@@ -3017,7 +3017,7 @@ const GLOBAL_CSS = `
       ${COLORS.orangeSoft};
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 7px;
 
@@ -3058,7 +3058,7 @@ const GLOBAL_CSS = `
       ${COLORS.border};
 
     background:
-      #F5F8F5;
+      var(--ad-soft);
 
     color:
       ${COLORS.muted};
@@ -3092,17 +3092,17 @@ const GLOBAL_CSS = `
 
   .conversations-row:hover {
     background:
-      #F9FBF9;
+      var(--ad-surface);
   }
 
   .conversations-row.open {
     background:
-      #FFFDF8;
+      var(--ad-raised);
   }
 
   .conversations-row.open:hover {
     background:
-      #FFF9EF;
+      var(--ad-raised);
   }
 
   /* =======================================================
@@ -3137,7 +3137,7 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 12px;
 
@@ -3258,7 +3258,7 @@ const GLOBAL_CSS = `
       ${COLORS.orangeSoft};
 
     color:
-      ${COLORS.orange};
+      var(--ad-warn);
 
     font-family:
       Georgia,
@@ -3270,7 +3270,7 @@ const GLOBAL_CSS = `
   .conversations-message
   > span {
     color:
-      #4B554D;
+      var(--ad-text);
 
     font-size: 9px;
 
@@ -3404,7 +3404,7 @@ const GLOBAL_CSS = `
   .conversations-empty
   strong {
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 13px;
   }
@@ -3482,7 +3482,7 @@ const GLOBAL_CSS = `
       ${COLORS.border};
 
     border-top-color:
-      ${COLORS.orange};
+      var(--ad-warn);
 
     border-radius: 50%;
 
@@ -3494,7 +3494,7 @@ const GLOBAL_CSS = `
   .conversations-loading-root
   strong {
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 13px;
   }

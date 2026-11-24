@@ -971,7 +971,7 @@ function SectionTitle({
 
 const page = {
   padding: 24,
-  background: "#F8FAFC",
+  background: "var(--ad-raised)",
   minHeight: "100vh",
 };
 
@@ -979,7 +979,7 @@ const back = {
   marginBottom: 20,
   background: "transparent",
   border: "none",
-  color: "#475569",
+  color: "var(--ad-text)",
   fontWeight: 700,
   cursor: "pointer",
   padding: 0,
@@ -999,11 +999,11 @@ const title = {
   fontSize: 26,
   fontWeight: 900,
   margin: 0,
-  color: "#111827",
+  color: "var(--ad-text)",
 };
 
 const subtitle = {
-  color: "#64748B",
+  color: "var(--ad-muted)",
   marginTop: 6,
   marginBottom: 0,
 };
@@ -1051,9 +1051,9 @@ const heroValueSmall = {
 };
 
 const errorCard = {
-  background: "#FFF7F7",
+  background: "var(--ad-raised)",
   border:
-    "1px solid #FECACA",
+    "1px solid var(--ad-border)",
   borderLeft:
     "5px solid #DC2626",
   padding: 20,
@@ -1062,7 +1062,7 @@ const errorCard = {
 };
 
 const errorCardLabel = {
-  color: "#991B1B",
+  color: "var(--ad-danger)",
   fontSize: 12,
   fontWeight: 800,
   textTransform:
@@ -1071,7 +1071,7 @@ const errorCardLabel = {
 };
 
 const errorCardMessage = {
-  color: "#7F1D1D",
+  color: "var(--ad-danger)",
   fontSize: 15,
   fontWeight: 700,
   lineHeight: 1.6,
@@ -1088,11 +1088,11 @@ const diagnosticGrid = {
 };
 
 const card = {
-  background: "#FFFFFF",
+  background: "var(--ad-surface)",
   padding: 20,
   borderRadius: 16,
   border:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   marginBottom: 20,
   minWidth: 0,
 };
@@ -1101,13 +1101,13 @@ const sectionTitle = {
   fontWeight: 900,
   marginBottom: 16,
   fontSize: 14,
-  color: "#334155",
+  color: "var(--ad-text)",
 };
 
 const highlightValue = {
   fontSize: 19,
   fontWeight: 900,
-  color: "#111827",
+  color: "var(--ad-text)",
   marginBottom: 18,
   overflowWrap:
     "anywhere",
@@ -1127,14 +1127,14 @@ const row = {
 
 const rowLabel = {
   fontSize: 11,
-  color: "#64748B",
+  color: "var(--ad-muted)",
   fontWeight: 600,
   marginBottom: 3,
 };
 
 const rowValue = {
   fontWeight: 600,
-  color: "#111827",
+  color: "var(--ad-text)",
   overflowWrap:
     "anywhere",
   lineHeight: 1.45,
@@ -1159,10 +1159,10 @@ const terminal = {
 const errorBox = {
   padding: 18,
   borderRadius: 12,
-  background: "#FEF2F2",
+  background: "var(--ad-raised)",
   border:
-    "1px solid #FECACA",
-  color: "#991B1B",
+    "1px solid var(--ad-border)",
+  color: "var(--ad-danger)",
 };
 
 const severityBadge = (
@@ -1170,21 +1170,21 @@ const severityBadge = (
 ) => ({
   background:
     severity === "critical"
-      ? "#FEE2E2"
+      ? "var(--ad-raised)"
       : severity === "medium"
       ? "#FEF3C7"
       : severity === "low"
       ? "#DCFCE7"
-      : "#E2E8F0",
+      : "var(--ad-raised)",
 
   color:
     severity === "critical"
-      ? "#991B1B"
+      ? "var(--ad-danger)"
       : severity === "medium"
-      ? "#92400E"
+      ? "var(--ad-warn)"
       : severity === "low"
-      ? "#166534"
-      : "#334155",
+      ? "var(--ad-accent-text)"
+      : "var(--ad-text)",
 
   padding: "7px 11px",
   borderRadius: 8,
@@ -1203,17 +1203,17 @@ const statusBadge = (
       : status ===
         "in_progress"
       ? "#DBEAFE"
-      : "#E2E8F0",
+      : "var(--ad-raised)",
 
   color:
     status === "resolved"
-      ? "#166534"
+      ? "var(--ad-accent-text)"
       : status === "open"
-      ? "#92400E"
+      ? "var(--ad-warn)"
       : status ===
         "in_progress"
-      ? "#1D4ED8"
-      : "#334155",
+      ? "var(--ad-blue)"
+      : "var(--ad-text)",
 
   padding: "7px 11px",
   borderRadius: 8,

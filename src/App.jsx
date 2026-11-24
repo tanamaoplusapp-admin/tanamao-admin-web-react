@@ -1,6 +1,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import AppRoutes from './routes/AppRoutes';
+import { ThemeProvider } from './layout/theme';
 
 export default function App() {
 
@@ -31,7 +32,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <ThemeProvider><AppRoutes /></ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );

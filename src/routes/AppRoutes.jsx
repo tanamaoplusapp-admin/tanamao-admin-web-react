@@ -4,11 +4,12 @@ import AdminLayout from "../layout/AdminLayout";
 
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
+import Operation from "../pages/Operacao";
 
 import Users from "../pages/Users";
 import UserDetail from "../pages/Users/Detail";
 
-import Observability from "../pages/Observability";
+
 
 import Conversations from "../pages/Conversations";
 import ConversationThread from "../pages/Conversations/Thread";
@@ -43,12 +44,13 @@ export default function AppRoutes() {
           </RequireAdmin>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route index element={<Operation />} />
+        <Route path="indicadores" element={<Dashboard />} />
 
         <Route path="users" element={<Users />} />
         <Route path="users/:id" element={<UserDetail />} />
 
-        <Route path="observability" element={<Observability />} />
+        <Route path="observability" element={<Operation monitor />} />
 
         <Route path="conversations" element={<Conversations />} />
         <Route path="conversations/:id" element={<ConversationThread />} />

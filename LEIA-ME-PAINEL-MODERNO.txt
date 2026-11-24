@@ -1,0 +1,26 @@
+TANAMAO+ | CENTRAL ADMIN MODERNA
+Base: src(2).zip enviado em 24/11/2026.
+
+INSTALACAO
+1. Na pasta do projeto tanamao-admin-web-react, salve uma copia da pasta src atual.
+2. Extraia este ZIP na raiz do projeto (ao lado de package.json), substituindo os arquivos em src. Inclui a pasta src completa com os arquivos anteriores preservados e as atualizacoes. Nao substitui .env, package.json, package-lock.json, index.html ou configuracoes de deploy.
+3. Execute npm install se necessario, node --test tests/operacao.test.mjs e npm run build.
+4. Para testar com a API configurada, execute npm run dev. Entre com sua conta e revise os temas, o menu e as rotas.
+5. Se o build e os testes locais passarem, publique: git add src tests/operacao.test.mjs; git commit -m "Modernizar central administrativa"; git push.
+
+O QUE FOI ALTERADO
+- Central de operacoes como pagina inicial. Dashboard original continua em Indicadores (/indicadores).
+- Menu por grupos, recolhivel, responsivo e com busca de ferramentas (Ctrl+K).
+- Tema claro, escuro, verde (barra lateral verde e area de trabalho clara) e automatico, salvo no navegador.
+- Consultas aos seis endpoints existentes enquanto o painel estiver aberto e visivel (60 s, opcional; atualizacao manual). Dados anteriores marcados quando uma consulta falha, valores ausentes nao viram zeros.
+- Fila priorizada com 13 tipos de pendencias e atalhos para as telas responsaveis. Contadores representam tipos de alerta, nao a soma de ocorrencias, para evitar duplicidades.
+- Exportacao CSV do retrato operacional; nao e um relatorio historico, nem envio automatico por e-mail.
+- Observabilidade: substitui o prototipo com valores mockados por consultas reais. O status representa disponibilidade das consultas administrativas, nao monitoramento completo de infraestrutura.
+- Estilos e paleta dos modulos existentes adaptados; chamadas e rotas anteriores mantidas. Aprovacoes de motoristas continuam manuais; cadastro de prestadores e empresas nao muda.
+- Nenhuma alteracao no backend, aplicativo ou MongoDB, nenhuma dependencia nova.
+
+VALIDACAO
+10 testes unitarios de contadores, prioridade, falhas e tarifa dinamica passaram. 47 arquivos JS/JSX passaram na analise sintatica/transpilacao e resolucao dos imports locais. As 19 rotas explicitas anteriores e chamadas diretas de API das paginas existentes foram comparadas e mantidas. A estrutura visual da nova central foi conferida com dados simulados, em HTML gerado dos componentes, nos temas claro/escuro desktop e em viewport de 390 px. Isso nao substitui uma execucao React completa. Nao foi possivel baixar as dependencias npm neste ambiente (DNS indisponivel); o build Vite, a interacao completa e a integracao autenticada com a API de producao ainda precisam ser testados.
+
+LIMITES
+Novas rotinas autonomas de servidor, notificacoes de administracao com painel fechado, campanhas, alteracao de periodo gratuito de 10 dias via painel e relatorio diario enviado automaticamente exigem endpoints ou jobs no backend e nao estao implementados neste pacote. As automacoes preexistentes do servidor continuam funcionando conforme suas configuracoes. Nao ha alteracoes automaticas de pagamentos, aprovacoes, bloqueios ou tarifas nesta central: ela le os dados e direciona para os controles existentes.

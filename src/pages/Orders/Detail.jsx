@@ -21,36 +21,36 @@ const COLORS = {
   greenDark: "#1D3A22",
   greenStrong: "#17391F",
 
-  greenSoft: "#E7F0E7",
-  greenSoft2: "#F3F8F3",
+  greenSoft: "var(--ad-soft)",
+  greenSoft2: "var(--ad-raised)",
 
   orange: "#FF9900",
   orangeDark: "#A85A00",
-  orangeSoft: "#FFF1DD",
+  orangeSoft: "var(--ad-warn-bg)",
 
   blue: "#2563EB",
-  blueSoft: "#EFF6FF",
+  blueSoft: "var(--ad-blue-bg)",
 
   purple: "#7C3AED",
-  purpleSoft: "#F5F3FF",
+  purpleSoft: "var(--ad-purple-bg)",
 
   red: "#DC2626",
-  redSoft: "#FEF2F2",
+  redSoft: "var(--ad-danger-bg)",
 
   yellow: "#D97706",
-  yellowSoft: "#FFF7E6",
+  yellowSoft: "var(--ad-warn-bg)",
 
   graySoft: "#F3F4F6",
 
-  surface: "#FFFFFF",
-  background: "#EEF3EE",
+  surface: "var(--ad-surface)",
+  background: "var(--ad-bg)",
 
-  text: "#182018",
-  muted: "#6B7280",
-  subtle: "#9CA3AF",
+  text: "var(--ad-text)",
+  muted: "var(--ad-muted)",
+  subtle: "var(--ad-subtle)",
 
-  border: "#DDE5DD",
-  borderSoft: "#E7ECE7",
+  border: "var(--ad-border)",
+  borderSoft: "var(--ad-border)",
 };
 
 /* =========================================================
@@ -1306,7 +1306,7 @@ function ProgressInfo({
         style={{
           color:
             color ||
-            COLORS.greenDark,
+            "var(--ad-accent-text)",
         }}
       >
         {value || "—"}
@@ -1504,7 +1504,7 @@ function DetailCard({
         COLORS.greenSoft,
 
       color:
-        COLORS.green,
+        "var(--ad-accent-text)",
     },
 
     success: {
@@ -1512,7 +1512,7 @@ function DetailCard({
         COLORS.greenSoft,
 
       color:
-        COLORS.green,
+        "var(--ad-accent-text)",
     },
 
     warning: {
@@ -1520,7 +1520,7 @@ function DetailCard({
         COLORS.yellowSoft,
 
       color:
-        COLORS.yellow,
+        "var(--ad-warn)",
     },
 
     danger: {
@@ -1528,7 +1528,7 @@ function DetailCard({
         COLORS.redSoft,
 
       color:
-        COLORS.red,
+        "var(--ad-danger)",
     },
 
     info: {
@@ -1536,7 +1536,7 @@ function DetailCard({
         COLORS.blueSoft,
 
       color:
-        COLORS.blue,
+        "var(--ad-blue)",
     },
 
     purple: {
@@ -1544,7 +1544,7 @@ function DetailCard({
         COLORS.purpleSoft,
 
       color:
-        COLORS.purple,
+        "var(--ad-purple)",
     },
   };
 
@@ -1802,7 +1802,7 @@ function getStatusConfig(
         "Pendente",
 
       color:
-        "#92400E",
+        "var(--ad-warn)",
 
       background:
         "#FEF3C7",
@@ -1822,7 +1822,7 @@ function getStatusConfig(
         "Aceito",
 
       color:
-        "#1D4ED8",
+        "var(--ad-blue)",
 
       background:
         "#DBEAFE",
@@ -1842,10 +1842,10 @@ function getStatusConfig(
         "Em rota",
 
       color:
-        "#6D28D9",
+        "var(--ad-purple)",
 
       background:
-        "#EDE9FE",
+        "var(--ad-raised)",
 
       dot:
         "#A78BFA",
@@ -1862,10 +1862,10 @@ function getStatusConfig(
         "Em andamento",
 
       color:
-        "#6D28D9",
+        "var(--ad-purple)",
 
       background:
-        "#EDE9FE",
+        "var(--ad-raised)",
 
       dot:
         "#A78BFA",
@@ -1882,7 +1882,7 @@ function getStatusConfig(
         "Pago",
 
       color:
-        "#047857",
+        "var(--ad-accent-text)",
 
       background:
         "#D1FAE5",
@@ -1902,7 +1902,7 @@ function getStatusConfig(
         "Finalizado",
 
       color:
-        "#15803D",
+        "var(--ad-accent-text)",
 
       background:
         "#DCFCE7",
@@ -1922,10 +1922,10 @@ function getStatusConfig(
         "Cancelado",
 
       color:
-        "#DC2626",
+        "var(--ad-danger)",
 
       background:
-        "#FEE2E2",
+        "var(--ad-raised)",
 
       dot:
         "#F87171",
@@ -1942,10 +1942,10 @@ function getStatusConfig(
         "Expirado",
 
       color:
-        "#6B7280",
+        "var(--ad-muted)",
 
       background:
-        "#F3F4F6",
+        "var(--ad-raised)",
 
       dot:
         "#9CA3AF",
@@ -1966,10 +1966,10 @@ function getStatusConfig(
         status || "—",
 
       color:
-        "#374151",
+        "var(--ad-text)",
 
       background:
-        "#F3F4F6",
+        "var(--ad-raised)",
 
       dot:
         "#9CA3AF",
@@ -2003,7 +2003,7 @@ function getPaymentConfig(
         "Pendente",
 
       color:
-        "#92400E",
+        "var(--ad-warn)",
 
       background:
         COLORS.yellowSoft,
@@ -2020,7 +2020,7 @@ function getPaymentConfig(
         "Aprovado",
 
       color:
-        COLORS.green,
+        "var(--ad-accent-text)",
 
       background:
         COLORS.greenSoft,
@@ -2037,7 +2037,7 @@ function getPaymentConfig(
         "Rejeitado",
 
       color:
-        COLORS.red,
+        "var(--ad-danger)",
 
       background:
         COLORS.redSoft,
@@ -2054,7 +2054,7 @@ function getPaymentConfig(
         "Reembolsado",
 
       color:
-        COLORS.purple,
+        "var(--ad-purple)",
 
       background:
         COLORS.purpleSoft,
@@ -2590,7 +2590,7 @@ const GLOBAL_CSS = `
     margin-bottom: 3px;
 
     color:
-      #BFD3C0;
+      var(--ad-subtle);
 
     font-size: 9px;
 
@@ -2619,7 +2619,7 @@ const GLOBAL_CSS = `
       6px 0 0;
 
     color:
-      #D7E4D8;
+      var(--ad-subtle);
 
     font-size: 11px;
 
@@ -2684,7 +2684,7 @@ const GLOBAL_CSS = `
       rgba(255,153,0,.14);
 
     color:
-      #FFC66F;
+      var(--ad-warn);
   }
 
   .order-detail-hero-actions {
@@ -2784,7 +2784,7 @@ const GLOBAL_CSS = `
     margin-top: 15px;
 
     color:
-      #D4E1D5;
+      var(--ad-subtle);
 
     font-size: 9px;
   }
@@ -2877,7 +2877,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      #BFD0C0;
+      var(--ad-subtle);
 
     font-size: 8px;
 
@@ -2923,7 +2923,7 @@ const GLOBAL_CSS = `
 
     border:
       1px solid
-      #FECACA;
+      var(--ad-border);
 
     border-radius: 13px;
 
@@ -2931,7 +2931,7 @@ const GLOBAL_CSS = `
       ${COLORS.redSoft};
 
     color:
-      ${COLORS.red};
+      var(--ad-danger);
   }
 
   .order-detail-error-left {
@@ -2957,7 +2957,7 @@ const GLOBAL_CSS = `
     border-radius: 9px;
 
     background:
-      #FEE2E2;
+      var(--ad-raised);
 
     font-weight: 900;
   }
@@ -3018,7 +3018,7 @@ const GLOBAL_CSS = `
       ${COLORS.orangeSoft};
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 15px;
 
@@ -3031,7 +3031,7 @@ const GLOBAL_CSS = `
     margin-bottom: 2px;
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 8px;
 
@@ -3045,7 +3045,7 @@ const GLOBAL_CSS = `
     margin: 0;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 18px;
 
@@ -3160,7 +3160,7 @@ const GLOBAL_CSS = `
   .order-timeline-step.completed
   .order-timeline-circle {
     border-color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     background:
       ${COLORS.green};
@@ -3171,7 +3171,7 @@ const GLOBAL_CSS = `
   .order-timeline-step.active
   .order-timeline-circle {
     border-color:
-      ${COLORS.orange};
+      var(--ad-warn);
 
     background:
       ${COLORS.orange};
@@ -3206,7 +3206,7 @@ const GLOBAL_CSS = `
   .order-timeline-step.active > strong,
   .order-timeline-step.completed > strong {
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
   }
 
   /* =======================================================
@@ -3237,7 +3237,7 @@ const GLOBAL_CSS = `
     border-radius: 12px;
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
 
     border:
       1px solid
@@ -3283,7 +3283,7 @@ const GLOBAL_CSS = `
 
   .order-terminal-state.cancelled {
     border:
-      1px solid #FECACA;
+      1px solid var(--ad-border);
 
     background:
       ${COLORS.redSoft};
@@ -3416,7 +3416,7 @@ const GLOBAL_CSS = `
       ${COLORS.blueSoft};
 
     color:
-      ${COLORS.blue};
+      var(--ad-blue);
 
     font-size: 17px;
 
@@ -3428,7 +3428,7 @@ const GLOBAL_CSS = `
       ${COLORS.orangeSoft};
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
   }
 
   .order-person-heading-content {
@@ -3461,7 +3461,7 @@ const GLOBAL_CSS = `
     white-space: nowrap;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 15px;
 
@@ -3501,7 +3501,7 @@ const GLOBAL_CSS = `
     border-radius: 11px;
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
 
     border:
       1px solid
@@ -3591,7 +3591,7 @@ const GLOBAL_CSS = `
     border-radius: 13px;
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
 
     transition:
       transform 150ms ease,
@@ -3604,7 +3604,7 @@ const GLOBAL_CSS = `
       translateY(-1px);
 
     border-color:
-      #CEDACE;
+      var(--ad-border);
 
     box-shadow:
       0 6px 15px
@@ -3689,7 +3689,7 @@ const GLOBAL_CSS = `
     top: 12px;
 
     color:
-      ${COLORS.orange};
+      var(--ad-warn);
 
     font-size: 40px;
 
@@ -3704,7 +3704,7 @@ const GLOBAL_CSS = `
     margin: 0;
 
     color:
-      #38433A;
+      var(--ad-text);
 
     font-size: 11px;
 
@@ -3741,7 +3741,7 @@ const GLOBAL_CSS = `
 
     border:
       1px solid
-      #D9E7DA;
+      var(--ad-border);
   }
 
   .order-payment-highlight > div:first-child > span,
@@ -3765,7 +3765,7 @@ const GLOBAL_CSS = `
     margin-top: 4px;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 24px;
 
@@ -3886,7 +3886,7 @@ const GLOBAL_CSS = `
     margin-top: 4px;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 13px;
 
@@ -3943,7 +3943,7 @@ const GLOBAL_CSS = `
 
   .order-technical-header:hover {
     background:
-      #FAFCFA;
+      var(--ad-surface);
   }
 
   .order-technical-header-left {
@@ -3983,7 +3983,7 @@ const GLOBAL_CSS = `
     display: block;
 
     color:
-      ${COLORS.orangeDark};
+      var(--ad-warn);
 
     font-size: 7px;
 
@@ -3999,7 +3999,7 @@ const GLOBAL_CSS = `
     margin-top: 2px;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 12px;
 
@@ -4039,7 +4039,7 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     font-size: 16px;
 
@@ -4064,7 +4064,7 @@ const GLOBAL_CSS = `
       ${COLORS.borderSoft};
 
     background:
-      #FAFCFA;
+      var(--ad-surface);
   }
 
   .order-technical-item {
@@ -4143,7 +4143,7 @@ const GLOBAL_CSS = `
       ${COLORS.greenSoft};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
 
     cursor: pointer;
 
@@ -4222,7 +4222,7 @@ const GLOBAL_CSS = `
       ${COLORS.border};
 
     border-top-color:
-      ${COLORS.orange};
+      var(--ad-warn);
 
     border-radius: 50%;
 
@@ -4233,7 +4233,7 @@ const GLOBAL_CSS = `
 
   .order-detail-loading strong {
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 14px;
   }
@@ -4267,7 +4267,7 @@ const GLOBAL_CSS = `
       ${COLORS.redSoft};
 
     color:
-      ${COLORS.red};
+      var(--ad-danger);
 
     font-size: 20px;
 
@@ -4279,7 +4279,7 @@ const GLOBAL_CSS = `
       12px 0 0;
 
     color:
-      ${COLORS.greenDark};
+      var(--ad-accent-text);
 
     font-size: 17px;
   }
@@ -4340,7 +4340,7 @@ const GLOBAL_CSS = `
       ${COLORS.surface};
 
     color:
-      ${COLORS.green};
+      var(--ad-accent-text);
   }
 
   @keyframes orderDetailSpin {

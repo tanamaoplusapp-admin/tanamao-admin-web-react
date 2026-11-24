@@ -24,33 +24,33 @@ import {
 const COLORS = {
   green: "#2E4F2F",
   greenDark: "#1D3A22",
-  greenSoft: "#E7F0E7",
+  greenSoft: "var(--ad-soft)",
 
   orange: "#FF9900",
   orangeDark: "#A85A00",
-  orangeSoft: "#FFF1DD",
+  orangeSoft: "var(--ad-warn-bg)",
 
   blue: "#2563EB",
-  blueSoft: "#EFF6FF",
+  blueSoft: "var(--ad-blue-bg)",
 
   purple: "#7C3AED",
-  purpleSoft: "#F5F3FF",
+  purpleSoft: "var(--ad-purple-bg)",
 
   red: "#DC2626",
-  redSoft: "#FEF2F2",
+  redSoft: "var(--ad-danger-bg)",
 
   yellow: "#D97706",
-  yellowSoft: "#FFF7E6",
+  yellowSoft: "var(--ad-warn-bg)",
 
-  surface: "#FFFFFF",
-  background: "#EEF3EE",
+  surface: "var(--ad-surface)",
+  background: "var(--ad-bg)",
 
-  text: "#182018",
-  muted: "#6B7280",
-  subtle: "#9CA3AF",
+  text: "var(--ad-text)",
+  muted: "var(--ad-muted)",
+  subtle: "var(--ad-subtle)",
 
-  border: "#DDE5DD",
-  borderSoft: "#E7ECE7",
+  border: "var(--ad-border)",
+  borderSoft: "var(--ad-border)",
 };
 
 /* =========================================================
@@ -1061,7 +1061,7 @@ export default function Users() {
               !search.trim()
             }
             color={
-              COLORS.greenDark
+              "var(--ad-accent-text)"
             }
             iconBackground={
               COLORS.greenSoft
@@ -1091,7 +1091,7 @@ export default function Users() {
               prestadoresAtivos
             }
             color={
-              COLORS.green
+              "var(--ad-accent-text)"
             }
             iconBackground={
               COLORS.greenSoft
@@ -1112,7 +1112,7 @@ export default function Users() {
               "blocked"
             }
             color={
-              COLORS.red
+              "var(--ad-danger)"
             }
             iconBackground={
               COLORS.redSoft
@@ -1137,7 +1137,7 @@ export default function Users() {
               "cliente"
             }
             color={
-              COLORS.blue
+              "var(--ad-blue)"
             }
             iconBackground={
               COLORS.blueSoft
@@ -1162,7 +1162,7 @@ export default function Users() {
               "prestador"
             }
             color={
-              COLORS.orangeDark
+              "var(--ad-warn)"
             }
             iconBackground={
               COLORS.orangeSoft
@@ -1183,7 +1183,7 @@ export default function Users() {
               clientesPrestadores
             }
             color={
-              COLORS.purple
+              "var(--ad-purple)"
             }
             iconBackground={
               COLORS.purpleSoft
@@ -1199,7 +1199,7 @@ export default function Users() {
               motoristas
             }
             color={
-              COLORS.purple
+              "var(--ad-purple)"
             }
             iconBackground={
               COLORS.purpleSoft
@@ -1215,7 +1215,7 @@ export default function Users() {
               empresas
             }
             color={
-              COLORS.green
+              "var(--ad-accent-text)"
             }
             iconBackground={
               COLORS.greenSoft
@@ -1621,7 +1621,7 @@ export default function Users() {
                 <strong
                   style={{
                     color:
-                      COLORS.greenDark,
+                      "var(--ad-accent-text)",
                   }}
                 >
                   {
@@ -1632,7 +1632,7 @@ export default function Users() {
                 <strong
                   style={{
                     color:
-                      COLORS.greenDark,
+                      "var(--ad-accent-text)",
                   }}
                 >
                   {
@@ -2080,7 +2080,7 @@ function KPI({
 
         background:
           active
-            ? "#F5FAF5"
+            ? "var(--ad-soft)"
             : COLORS.surface,
       }}
     >
@@ -2419,8 +2419,8 @@ function StatusBadge({
 
         color:
           blocked
-            ? COLORS.red
-            : COLORS.green,
+            ? "var(--ad-danger)"
+            : "var(--ad-accent-text)",
       }}
     >
       <span
@@ -2471,7 +2471,7 @@ function AccessBadge({
   const palette = {
     active: {
       color:
-        COLORS.green,
+        "var(--ad-accent-text)",
 
       background:
         COLORS.greenSoft,
@@ -2479,7 +2479,7 @@ function AccessBadge({
 
     expired: {
       color:
-        COLORS.red,
+        "var(--ad-danger)",
 
       background:
         COLORS.redSoft,
@@ -2487,7 +2487,7 @@ function AccessBadge({
 
     noaccess: {
       color:
-        COLORS.yellow,
+        "var(--ad-warn)",
 
       background:
         COLORS.yellowSoft,
@@ -2498,7 +2498,7 @@ function AccessBadge({
         COLORS.muted,
 
       background:
-        "#F3F4F6",
+        "var(--ad-raised)",
     },
   };
 
@@ -2990,7 +2990,7 @@ const GLOBAL_CSS = `
     transform: translateY(-1px);
 
     background:
-      #E7EEE7 !important;
+      var(--ad-soft) !important;
   }
 
   .users-table-row {
@@ -2999,7 +2999,7 @@ const GLOBAL_CSS = `
   }
 
   .users-table-row:hover {
-    background: #F8FAF8;
+    background: var(--ad-soft);
   }
 
   .users-search-input:focus,
@@ -3007,7 +3007,7 @@ const GLOBAL_CSS = `
     outline: none;
 
     border-color:
-      #AFC5B0 !important;
+      var(--ad-border) !important;
 
     box-shadow:
       0 0 0 3px
@@ -3159,7 +3159,7 @@ const styles = {
     fontWeight: 900,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
   },
 
   loadingText: {
@@ -3213,7 +3213,7 @@ const styles = {
 
     letterSpacing: 1.2,
 
-    color: "#BFD3C0",
+    color: "var(--ad-subtle)",
   },
 
   heroTitle: {
@@ -3235,7 +3235,7 @@ const styles = {
 
     lineHeight: 1.55,
 
-    color: "#D7E4D8",
+    color: "var(--ad-subtle)",
   },
 
   heroActions: {
@@ -3290,7 +3290,7 @@ const styles = {
 
     fontSize: 11,
 
-    color: "#D4E1D5",
+    color: "var(--ad-subtle)",
   },
 
   liveDot: {
@@ -3338,7 +3338,7 @@ const styles = {
 
     fontWeight: 700,
 
-    color: "#CADACA",
+    color: "var(--ad-subtle)",
   },
 
   heroStatValue: {
@@ -3358,7 +3358,7 @@ const styles = {
 
     fontSize: 8,
 
-    color: "#BFD0C0",
+    color: "var(--ad-subtle)",
   },
 
   /* ERRO */
@@ -3384,7 +3384,7 @@ const styles = {
       COLORS.redSoft,
 
     border:
-      "1px solid #FECACA",
+      "1px solid var(--ad-border)",
   },
 
   errorLeft: {
@@ -3413,10 +3413,10 @@ const styles = {
     borderRadius: 11,
 
     background:
-      "#FEE2E2",
+      "var(--ad-raised)",
 
     color:
-      COLORS.red,
+      "var(--ad-danger)",
 
     fontWeight: 900,
   },
@@ -3426,7 +3426,7 @@ const styles = {
 
     fontWeight: 900,
 
-    color: "#991B1B",
+    color: "var(--ad-danger)",
   },
 
   errorText: {
@@ -3434,7 +3434,7 @@ const styles = {
 
     fontSize: 11,
 
-    color: "#B45353",
+    color: "var(--ad-danger)",
   },
 
   errorButton: {
@@ -3478,7 +3478,7 @@ const styles = {
     letterSpacing: 0.8,
 
     color:
-      COLORS.orangeDark,
+      "var(--ad-warn)",
   },
 
   sectionTitle: {
@@ -3489,7 +3489,7 @@ const styles = {
     fontWeight: 900,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
   },
 
   sectionDescription: {
@@ -3570,7 +3570,7 @@ const styles = {
       COLORS.greenSoft,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     fontSize: 8,
 
@@ -3636,7 +3636,7 @@ const styles = {
     fontWeight: 800,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
   },
 
   /* CIDADES */
@@ -3701,7 +3701,7 @@ const styles = {
       COLORS.surface,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     cursor: "pointer",
 
@@ -3798,7 +3798,7 @@ const styles = {
     fontWeight: 900,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
   },
 
   cityCardLabel: {
@@ -3859,7 +3859,7 @@ const styles = {
     fontWeight: 900,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
   },
 
   cityPreviewText: {
@@ -3927,7 +3927,7 @@ const styles = {
     zIndex: 2,
 
     color:
-      COLORS.orange,
+      "var(--ad-warn)",
 
     fontSize: 18,
 
@@ -3951,7 +3951,7 @@ const styles = {
 
     borderRadius: 12,
 
-    background: "#FAFCFA",
+    background: "var(--ad-surface)",
 
     color:
       COLORS.text,
@@ -3991,7 +3991,7 @@ const styles = {
       COLORS.greenSoft,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     cursor: "pointer",
 
@@ -4019,7 +4019,7 @@ const styles = {
 
     borderRadius: 11,
 
-    background: "#FFFFFF",
+    background: "var(--ad-surface)",
 
     color:
       COLORS.text,
@@ -4046,7 +4046,7 @@ const styles = {
       COLORS.greenSoft,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     cursor: "pointer",
 
@@ -4071,7 +4071,7 @@ const styles = {
     padding: "0 16px",
 
     background:
-      "#FAFCFA",
+      "var(--ad-surface)",
 
     borderBottom:
       `1px solid ${COLORS.borderSoft}`,
@@ -4091,7 +4091,7 @@ const styles = {
       COLORS.orangeSoft,
 
     color:
-      COLORS.orangeDark,
+      "var(--ad-warn)",
 
     fontSize: 9,
 
@@ -4118,7 +4118,7 @@ const styles = {
       "13px 14px",
 
     background:
-      "#F5F8F5",
+      "var(--ad-soft)",
 
     borderBottom:
       `1px solid ${COLORS.border}`,
@@ -4180,7 +4180,7 @@ const styles = {
       COLORS.greenSoft,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     fontSize: 14,
 
@@ -4420,7 +4420,7 @@ const styles = {
       COLORS.orangeSoft,
 
     color:
-      COLORS.orange,
+      "var(--ad-warn)",
 
     fontSize: 24,
   },
@@ -4433,7 +4433,7 @@ const styles = {
     fontWeight: 900,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
   },
 
   emptyText: {

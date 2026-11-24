@@ -18,22 +18,22 @@ import logo from "../../assets/adaptive-icon.png";
 const COLORS = {
   green: "#2E4F2F",
   greenDark: "#1D3A22",
-  greenSoft: "#E7F0E7",
+  greenSoft: "var(--ad-soft)",
 
   orange: "#FF9900",
   orangeDark: "#A85A00",
-  orangeSoft: "#FFF1DD",
+  orangeSoft: "var(--ad-warn-bg)",
 
-  surface: "#FFFFFF",
+  surface: "var(--ad-surface)",
 
-  background: "#EEF3EE",
+  background: "var(--ad-bg)",
 
-  text: "#182018",
-  muted: "#6B7280",
-  subtle: "#9CA3AF",
+  text: "var(--ad-text)",
+  muted: "var(--ad-muted)",
+  subtle: "var(--ad-subtle)",
 
-  border: "#DDE5DD",
-  borderSoft: "#E7ECE7",
+  border: "var(--ad-border)",
+  borderSoft: "var(--ad-border)",
 };
 
 /* =========================================================
@@ -624,26 +624,26 @@ function AlertCard({
   const toneMap = {
     success: {
       background: COLORS.greenSoft,
-      border: "#CFE3D0",
-      color: COLORS.green,
+      border: "var(--ad-border)",
+      color: "var(--ad-accent-text)",
     },
 
     warning: {
       background: COLORS.yellowSoft,
-      border: "#FDE6A7",
-      color: "#B26A00",
+      border: "var(--ad-border)",
+      color: "var(--ad-warn)",
     },
 
     danger: {
       background: COLORS.redSoft,
-      border: "#FECACA",
-      color: COLORS.red,
+      border: "var(--ad-border)",
+      color: "var(--ad-danger)",
     },
 
     info: {
       background: COLORS.blueSoft,
-      border: "#BFDBFE",
-      color: COLORS.blue,
+      border: "var(--ad-border)",
+      color: "var(--ad-blue)",
     },
   };
 
@@ -983,7 +983,7 @@ export default function Dashboard() {
 
   const alerts =
     useMemo(() => {
-      if (loading) {
+      if (loading || error) {
         return [];
       }
 
@@ -1098,6 +1098,7 @@ export default function Dashboard() {
     }, [
       dashboard,
       loading,
+      error,
       navigate,
     ]);
 
@@ -1143,7 +1144,7 @@ export default function Dashboard() {
   max-width: 1600px;
   margin: 0 auto;
 
-  background: #EEF3EE;
+  background: var(--ad-soft);
 
   padding: 20px;
   border-radius: 28px;
@@ -1213,7 +1214,7 @@ export default function Dashboard() {
 
           .central-metric-card:hover {
             transform: translateY(-2px);
-            border-color: #D4DDD4 !important;
+            border-color: var(--ad-border) !important;
             box-shadow:
               0 10px 28px
               rgba(31, 48, 35, 0.08);
@@ -1245,8 +1246,8 @@ export default function Dashboard() {
           }
 
           .central-quick-nav:hover {
-            background: #EEF5EE !important;
-            border-color: #CAD8CB !important;
+            background: var(--ad-soft) !important;
+            border-color: var(--ad-border) !important;
             transform: translateY(-1px);
           }
 
@@ -1257,7 +1258,7 @@ export default function Dashboard() {
           }
 
           .central-icon-button:hover {
-            background: #EEF5EE !important;
+            background: var(--ad-soft) !important;
             transform: scale(1.03);
           }
 
@@ -1279,7 +1280,7 @@ export default function Dashboard() {
           }
 
           .central-secondary-button:hover {
-            background: #F4F7F4 !important;
+            background: var(--ad-soft) !important;
             transform: translateY(-1px);
           }
 
@@ -1289,9 +1290,9 @@ export default function Dashboard() {
             background:
               linear-gradient(
                 90deg,
-                #EEF1EE 25%,
-                #F7F8F7 45%,
-                #EEF1EE 65%
+                var(--ad-soft) 25%,
+                var(--ad-soft) 45%,
+                var(--ad-soft) 65%
               );
             background-size: 300% 100%;
             animation:
@@ -1740,7 +1741,7 @@ export default function Dashboard() {
                     )
               }
               subtitle="Solicitações respondidas"
-              color={COLORS.green}
+              color={"var(--ad-accent-text)"}
               iconBackground={COLORS.greenSoft}
               progress={responseRate}
               loading={loading}
@@ -1757,7 +1758,7 @@ export default function Dashboard() {
                     )
               }
               subtitle="Prestadores convertidos em pagantes"
-              color={COLORS.blue}
+              color={"var(--ad-blue)"}
               iconBackground={COLORS.blueSoft}
               progress={providerPaidRate}
               loading={loading}
@@ -1775,7 +1776,7 @@ export default function Dashboard() {
                     )} / 5`
               }
               subtitle="Reputação média da plataforma"
-              color={COLORS.orangeDark}
+              color={"var(--ad-warn)"}
               iconBackground={COLORS.orangeSoft}
               progress={ratingPercent}
               progressColor={COLORS.orange}
@@ -1799,7 +1800,7 @@ export default function Dashboard() {
                 dashboard.services
                   .criados
               )} criados`}
-              color={COLORS.green}
+              color={"var(--ad-accent-text)"}
               iconBackground={COLORS.greenSoft}
               progress={serviceCompletionRate}
               loading={loading}
@@ -1864,7 +1865,7 @@ export default function Dashboard() {
                     dashboard.finance
                       .receitaHoje
                   )}
-                  color={COLORS.green}
+                  color={"var(--ad-accent-text)"}
                   loading={loading}
                 />
 
@@ -1875,7 +1876,7 @@ export default function Dashboard() {
                     dashboard.finance
                       .receitaSemana
                   )}
-                  color={COLORS.green}
+                  color={"var(--ad-accent-text)"}
                   loading={loading}
                 />
 
@@ -1886,7 +1887,7 @@ export default function Dashboard() {
                     dashboard.finance
                       .receitaMes
                   )}
-                  color={COLORS.greenDark}
+                  color={"var(--ad-accent-text)"}
                   loading={loading}
                 />
 
@@ -1908,7 +1909,7 @@ export default function Dashboard() {
                     dashboard.finance
                       .transacoesAprovadas
                   )}
-                  color={COLORS.blue}
+                  color={"var(--ad-blue)"}
                   iconBackground={COLORS.blueSoft}
                   loading={loading}
                 />
@@ -1921,7 +1922,7 @@ export default function Dashboard() {
                       .acessosAtivos
                   )}
                   subtitle="Profissionais com acesso válido"
-                  color={COLORS.green}
+                  color={"var(--ad-accent-text)"}
                   loading={loading}
                 />
 
@@ -1933,7 +1934,7 @@ export default function Dashboard() {
                       .acessosExpirados
                   )}
                   subtitle="Profissionais com acesso vencido"
-                  color={COLORS.red}
+                  color={"var(--ad-danger)"}
                   iconBackground={COLORS.redSoft}
                   loading={loading}
                 />
@@ -1986,7 +1987,7 @@ export default function Dashboard() {
                   dashboard.users
                     .clientes
                 )}
-                color={COLORS.blue}
+                color={"var(--ad-blue)"}
                 iconBackground={COLORS.blueSoft}
                 loading={loading}
               />
@@ -1998,7 +1999,7 @@ export default function Dashboard() {
                   dashboard.users
                     .prestadores
                 )}
-                color={COLORS.green}
+                color={"var(--ad-accent-text)"}
                 loading={loading}
               />
 
@@ -2009,7 +2010,7 @@ export default function Dashboard() {
                   dashboard.users
                     .motoristas
                 )}
-                color={COLORS.purple}
+                color={"var(--ad-purple)"}
                 iconBackground={COLORS.purpleSoft}
                 loading={loading}
               />
@@ -2021,7 +2022,7 @@ export default function Dashboard() {
                   dashboard.users
                     .novosHoje
                 )}
-                color={COLORS.orangeDark}
+                color={"var(--ad-warn)"}
                 iconBackground={COLORS.orangeSoft}
                 loading={loading}
               />
@@ -2043,7 +2044,7 @@ export default function Dashboard() {
                   dashboard.users
                     .bloqueados
                 )}
-                color={COLORS.red}
+                color={"var(--ad-danger)"}
                 iconBackground={COLORS.redSoft}
                 onClick={() =>
                   navigate(
@@ -2095,7 +2096,7 @@ export default function Dashboard() {
                   dashboard.services
                     .aceitos
                 )}
-                color={COLORS.blue}
+                color={"var(--ad-blue)"}
                 iconBackground={COLORS.blueSoft}
                 loading={loading}
               />
@@ -2107,7 +2108,7 @@ export default function Dashboard() {
                   dashboard.services
                     .finalizados
                 )}
-                color={COLORS.green}
+                color={"var(--ad-accent-text)"}
                 loading={loading}
               />
 
@@ -2118,7 +2119,7 @@ export default function Dashboard() {
                   dashboard.services
                     .cancelados
                 )}
-                color={COLORS.red}
+                color={"var(--ad-danger)"}
                 iconBackground={COLORS.redSoft}
                 loading={loading}
               />
@@ -2130,7 +2131,7 @@ export default function Dashboard() {
                   dashboard.services
                     .semResposta
                 )}
-                color={COLORS.yellow}
+                color={"var(--ad-warn)"}
                 iconBackground={COLORS.yellowSoft}
                 loading={loading}
               />
@@ -2146,7 +2147,7 @@ export default function Dashboard() {
                   dashboard.services
                     .taxaResposta
                 }
-                color={COLORS.green}
+                color={"var(--ad-accent-text)"}
                 loading={loading}
               />
             </div>
@@ -2201,7 +2202,7 @@ export default function Dashboard() {
                     registeredProviders
                   }
                   detail="Base de prestadores cadastrados"
-                  color={COLORS.blue}
+                  color={"var(--ad-blue)"}
                   width={100}
                 />
 
@@ -2214,7 +2215,7 @@ export default function Dashboard() {
                     dashboard.conversion
                       .taxaPagamento
                   )} de conversão`}
-                  color={COLORS.orange}
+                  color={"var(--ad-warn)"}
                   width={
                     payingWidth
                   }
@@ -2226,7 +2227,7 @@ export default function Dashboard() {
                     activeProviders
                   }
                   detail="Prestadores ativos na operação"
-                  color={COLORS.green}
+                  color={"var(--ad-accent-text)"}
                   width={
                     activeWidth
                   }
@@ -2251,7 +2252,7 @@ export default function Dashboard() {
                     dashboard.conversion
                       .prestadoresPagantes
                   )}
-                  color={COLORS.green}
+                  color={"var(--ad-accent-text)"}
                   loading={loading}
                 />
 
@@ -2262,7 +2263,7 @@ export default function Dashboard() {
                     dashboard.conversion
                       .taxaPagamento
                   )}
-                  color={COLORS.blue}
+                  color={"var(--ad-blue)"}
                   iconBackground={COLORS.blueSoft}
                   progress={
                     dashboard.conversion
@@ -2311,7 +2312,7 @@ export default function Dashboard() {
                   COLORS.orange
                 }
                 color={
-                  COLORS.orangeDark
+                  "var(--ad-warn)"
                 }
                 iconBackground={
                   COLORS.orangeSoft
@@ -2327,7 +2328,7 @@ export default function Dashboard() {
                     .tempoPrimeiroChat
                 )} min`}
                 subtitle="Tempo médio até o primeiro contato"
-                color={COLORS.blue}
+                color={"var(--ad-blue)"}
                 iconBackground={COLORS.blueSoft}
                 loading={loading}
               />
@@ -2339,7 +2340,7 @@ export default function Dashboard() {
                   dashboard.quality
                     .prestadoresSemResposta
                 )}
-                color={COLORS.yellow}
+                color={"var(--ad-warn)"}
                 iconBackground={COLORS.yellowSoft}
                 loading={loading}
               />
@@ -2352,7 +2353,7 @@ export default function Dashboard() {
                     .abertos
                 )}
                 subtitle="Abrir central de conversas"
-                color={COLORS.orangeDark}
+                color={"var(--ad-warn)"}
                 iconBackground={COLORS.orangeSoft}
                 onClick={() =>
                   navigate(
@@ -2409,7 +2410,7 @@ export default function Dashboard() {
                       )}% da base`
                     : "Sem base disponível"
                 }
-                color={COLORS.green}
+                color={"var(--ad-accent-text)"}
                 progress={
                   activeCompanyRate
                 }
@@ -2502,7 +2503,7 @@ const styles = {
 
     borderRadius: 18,
 
-    background: "#FFFFFF",
+    background: "var(--ad-surface)",
 
     boxShadow:
       "0 8px 24px rgba(0, 0, 0, 0.12)",
@@ -2521,7 +2522,7 @@ const styles = {
     fontWeight: 900,
     letterSpacing: 1.2,
 
-    color: "#BFD3C0",
+    color: "var(--ad-subtle)",
   },
 
   heroTitle: {
@@ -2542,7 +2543,7 @@ const styles = {
     fontSize: 13,
     lineHeight: 1.55,
 
-    color: "#D7E4D8",
+    color: "var(--ad-subtle)",
   },
 
   heroActions: {
@@ -2611,7 +2612,7 @@ const styles = {
     marginTop: 17,
 
     fontSize: 11,
-    color: "#D4E1D5",
+    color: "var(--ad-subtle)",
   },
 
   liveDot: {
@@ -2681,7 +2682,7 @@ const styles = {
     fontSize: 10,
     fontWeight: 700,
 
-    color: "#C9D9CA",
+    color: "var(--ad-subtle)",
   },
 
   heroMetricValue: {
@@ -2699,7 +2700,7 @@ const styles = {
 
     fontSize: 10,
 
-    color: "#C5D5C7",
+    color: "var(--ad-subtle)",
   },
 
   errorBox: {
@@ -2716,7 +2717,7 @@ const styles = {
     background: COLORS.redSoft,
 
     border:
-      "1px solid #FECACA",
+      "1px solid var(--ad-border)",
   },
 
   errorLeft: {
@@ -2736,9 +2737,9 @@ const styles = {
 
     borderRadius: 10,
 
-    background: "#FEE2E2",
+    background: "var(--ad-raised)",
 
-    color: COLORS.red,
+    color: "var(--ad-danger)",
 
     fontWeight: 900,
   },
@@ -2747,7 +2748,7 @@ const styles = {
     fontSize: 13,
     fontWeight: 800,
 
-    color: "#991B1B",
+    color: "var(--ad-danger)",
   },
 
   errorText: {
@@ -2755,7 +2756,7 @@ const styles = {
 
     fontSize: 11,
 
-    color: "#B45353",
+    color: "var(--ad-danger)",
   },
 
   errorButton: {
@@ -2815,7 +2816,7 @@ const styles = {
       COLORS.surface,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     cursor:
       "pointer",
@@ -2837,7 +2838,7 @@ const styles = {
     fontWeight: 900,
     letterSpacing: 0.8,
 
-    color: COLORS.orangeDark,
+    color: "var(--ad-warn)",
   },
 
   sectionTopTitle: {
@@ -2845,7 +2846,7 @@ const styles = {
     lineHeight: 1.25,
     fontWeight: 900,
 
-    color: COLORS.greenDark,
+    color: "var(--ad-accent-text)",
   },
 
   sectionTopDescription: {
@@ -2954,7 +2955,7 @@ const styles = {
     lineHeight: 1.25,
     fontWeight: 900,
 
-    color: COLORS.greenDark,
+    color: "var(--ad-accent-text)",
   },
 
   sectionDescription: {
@@ -2982,7 +2983,7 @@ const styles = {
       COLORS.surface,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     fontSize: 18,
     fontWeight: 700,
@@ -3082,7 +3083,7 @@ const styles = {
     fontSize: 10,
     fontWeight: 800,
 
-    color: COLORS.green,
+    color: "var(--ad-accent-text)",
   },
 
   financeHero: {
@@ -3105,7 +3106,7 @@ const styles = {
       )`,
 
     border:
-      "1px solid #DCE8DC",
+      "1px solid var(--ad-border)",
   },
 
   financeHeroLabel: {
@@ -3115,7 +3116,7 @@ const styles = {
     fontWeight: 900,
     letterSpacing: 0.8,
 
-    color: COLORS.green,
+    color: "var(--ad-accent-text)",
   },
 
   financeHeroValue: {
@@ -3123,7 +3124,7 @@ const styles = {
     lineHeight: 1.2,
     fontWeight: 900,
 
-    color: COLORS.greenDark,
+    color: "var(--ad-accent-text)",
   },
 
   financeHeroDescription: {
@@ -3188,7 +3189,7 @@ const styles = {
     fontSize: 17,
     fontWeight: 900,
 
-    color: COLORS.greenDark,
+    color: "var(--ad-accent-text)",
   },
 
   conversionBadge: {
@@ -3200,7 +3201,7 @@ const styles = {
       COLORS.greenSoft,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     fontSize: 10,
     fontWeight: 900,

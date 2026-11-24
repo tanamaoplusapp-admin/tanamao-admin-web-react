@@ -74,16 +74,16 @@ return text.includes(search.toLowerCase())
           width:"100%",
           padding:12,
           borderRadius:10,
-          border:"1px solid #E5E7EB",
+          border:"1px solid var(--ad-border)",
           marginBottom:20
         }}
       />
 
       <div style={{
-        background:"#fff",
+        background:"var(--ad-surface)",
         borderRadius:18,
         padding:20,
-        border:"1px solid #E5E7EB"
+        border:"1px solid var(--ad-border)"
       }}>
 
         {filtered.map(log => (
@@ -92,7 +92,7 @@ return text.includes(search.toLowerCase())
             key={log._id}
             style={{
               padding:14,
-              borderBottom:"1px solid #F1F5F9"
+              borderBottom:"1px solid var(--ad-border)"
             }}
           >
 
@@ -105,7 +105,7 @@ return text.includes(search.toLowerCase())
 
             <div style={{
               fontSize:12,
-              color:"#64748B",
+              color:"var(--ad-muted)",
               marginTop:4
             }}>
               Usuário: {log.targetId}
@@ -113,14 +113,14 @@ return text.includes(search.toLowerCase())
 
             <div style={{
               fontSize:12,
-              color:"#64748B"
+              color:"var(--ad-muted)"
             }}>
               Admin: {log.adminId?.name}
             </div>
 
             <div style={{
               fontSize:11,
-              color:"#94A3B8",
+              color:"var(--ad-muted)",
               marginTop:2
             }}>
               {new Date(log.createdAt).toLocaleString()}

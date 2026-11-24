@@ -20,33 +20,33 @@ import API from "../../services/api";
 const COLORS = {
   green: "#2E4F2F",
   greenDark: "#1D3A22",
-  greenSoft: "#E7F0E7",
+  greenSoft: "var(--ad-soft)",
 
   orange: "#FF9900",
   orangeDark: "#A85A00",
-  orangeSoft: "#FFF1DD",
+  orangeSoft: "var(--ad-warn-bg)",
 
   blue: "#2563EB",
-  blueSoft: "#EFF6FF",
+  blueSoft: "var(--ad-blue-bg)",
 
   purple: "#7C3AED",
-  purpleSoft: "#F5F3FF",
+  purpleSoft: "var(--ad-purple-bg)",
 
   red: "#DC2626",
-  redSoft: "#FEF2F2",
+  redSoft: "var(--ad-danger-bg)",
 
   yellow: "#D97706",
-  yellowSoft: "#FFF7E6",
+  yellowSoft: "var(--ad-warn-bg)",
 
-  surface: "#FFFFFF",
-  background: "#EEF3EE",
+  surface: "var(--ad-surface)",
+  background: "var(--ad-bg)",
 
-  text: "#182018",
-  muted: "#6B7280",
-  subtle: "#9CA3AF",
+  text: "var(--ad-text)",
+  muted: "var(--ad-muted)",
+  subtle: "var(--ad-subtle)",
 
-  border: "#DDE5DD",
-  borderSoft: "#E7ECE7",
+  border: "var(--ad-border)",
+  borderSoft: "var(--ad-border)",
 };
 
 /* =========================================================
@@ -1377,7 +1377,7 @@ export default function UserDetail() {
                   }
                   icon="📥"
                   color={
-                    COLORS.greenDark
+                    "var(--ad-accent-text)"
                   }
                   background={
                     COLORS.greenSoft
@@ -1391,7 +1391,7 @@ export default function UserDetail() {
                   }
                   icon="⌛"
                   color={
-                    COLORS.yellow
+                    "var(--ad-warn)"
                   }
                   background={
                     COLORS.yellowSoft
@@ -1405,7 +1405,7 @@ export default function UserDetail() {
                   }
                   icon="✓"
                   color={
-                    COLORS.blue
+                    "var(--ad-blue)"
                   }
                   background={
                     COLORS.blueSoft
@@ -1419,7 +1419,7 @@ export default function UserDetail() {
                   }
                   icon="×"
                   color={
-                    COLORS.red
+                    "var(--ad-danger)"
                   }
                   background={
                     COLORS.redSoft
@@ -1433,7 +1433,7 @@ export default function UserDetail() {
                   }
                   icon="→"
                   color={
-                    COLORS.orangeDark
+                    "var(--ad-warn)"
                   }
                   background={
                     COLORS.orangeSoft
@@ -1447,7 +1447,7 @@ export default function UserDetail() {
                   }
                   icon="R$"
                   color={
-                    COLORS.green
+                    "var(--ad-accent-text)"
                   }
                   background={
                     COLORS.greenSoft
@@ -1461,7 +1461,7 @@ export default function UserDetail() {
                   }
                   icon="★"
                   color={
-                    COLORS.green
+                    "var(--ad-accent-text)"
                   }
                   background={
                     COLORS.greenSoft
@@ -1571,7 +1571,7 @@ function HeroBadge({
     success: {
       background:
         "rgba(102,219,132,.14)",
-      color: "#A8ECB8",
+      color: "var(--ad-accent-text)",
       border:
         "rgba(102,219,132,.20)",
     },
@@ -1579,7 +1579,7 @@ function HeroBadge({
     danger: {
       background:
         "rgba(255,120,120,.14)",
-      color: "#FFB8B8",
+      color: "var(--ad-danger)",
       border:
         "rgba(255,120,120,.20)",
     },
@@ -1587,7 +1587,7 @@ function HeroBadge({
     orange: {
       background:
         "rgba(255,153,0,.15)",
-      color: "#FFC46B",
+      color: "var(--ad-warn)",
       border:
         "rgba(255,153,0,.22)",
     },
@@ -1726,7 +1726,7 @@ function InfoCard({
   const palette = {
     success: {
       color:
-        COLORS.green,
+        "var(--ad-accent-text)",
 
       background:
         COLORS.greenSoft,
@@ -1734,7 +1734,7 @@ function InfoCard({
 
     danger: {
       color:
-        COLORS.red,
+        "var(--ad-danger)",
 
       background:
         COLORS.redSoft,
@@ -1742,7 +1742,7 @@ function InfoCard({
 
     warning: {
       color:
-        COLORS.yellow,
+        "var(--ad-warn)",
 
       background:
         COLORS.yellowSoft,
@@ -1750,7 +1750,7 @@ function InfoCard({
 
     active: {
       color:
-        COLORS.green,
+        "var(--ad-accent-text)",
 
       background:
         COLORS.greenSoft,
@@ -1758,7 +1758,7 @@ function InfoCard({
 
     expired: {
       color:
-        COLORS.red,
+        "var(--ad-danger)",
 
       background:
         COLORS.redSoft,
@@ -1766,7 +1766,7 @@ function InfoCard({
 
     overdue: {
       color:
-        COLORS.red,
+        "var(--ad-danger)",
 
       background:
         COLORS.redSoft,
@@ -1774,7 +1774,7 @@ function InfoCard({
 
     trial: {
       color:
-        COLORS.yellow,
+        "var(--ad-warn)",
 
       background:
         COLORS.yellowSoft,
@@ -1782,7 +1782,7 @@ function InfoCard({
 
     neutral: {
       color:
-        COLORS.green,
+        "var(--ad-accent-text)",
 
       background:
         COLORS.greenSoft,
@@ -2084,7 +2084,7 @@ function AccessButton({
         color:
           featured
             ? "#FFFFFF"
-            : COLORS.green,
+            : "var(--ad-accent-text)",
 
         borderColor:
           featured
@@ -2141,13 +2141,13 @@ function FeedbackBanner({
 
         borderColor:
           success
-            ? "#CFE2D0"
-            : "#FECACA",
+            ? "var(--ad-border)"
+            : "var(--ad-border)",
 
         color:
           success
-            ? COLORS.green
-            : COLORS.red,
+            ? "var(--ad-accent-text)"
+            : "var(--ad-danger)",
       }}
     >
       <div
@@ -2917,7 +2917,7 @@ const GLOBAL_CSS = `
   .user-service-card:hover,
   .user-financial-hero:hover {
     transform: translateY(-2px);
-    border-color: #CDD9CE !important;
+    border-color: var(--ad-border) !important;
     box-shadow:
       0 8px 22px
       rgba(31,55,34,.07);
@@ -2957,7 +2957,7 @@ const GLOBAL_CSS = `
     height: 13px;
     display: inline-block;
     border-radius: 50%;
-    border: 2px solid #D6DFD6;
+    border: 2px solid var(--ad-border);
     border-top-color: #2E4F2F;
     animation:
       userDetailSpin
@@ -3102,7 +3102,7 @@ const styles = {
     fontWeight: 900,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
   },
 
   loadingDescription: {
@@ -3219,7 +3219,7 @@ const styles = {
   heroEyebrow: {
     marginBottom: 3,
 
-    color: "#BFD3C0",
+    color: "var(--ad-subtle)",
 
     fontSize: 9,
 
@@ -3248,7 +3248,7 @@ const styles = {
   heroEmail: {
     marginTop: 4,
 
-    color: "#D5E1D6",
+    color: "var(--ad-subtle)",
 
     fontSize: 11,
   },
@@ -3359,7 +3359,7 @@ const styles = {
 
     marginTop: 16,
 
-    color: "#D1DFD2",
+    color: "var(--ad-subtle)",
 
     fontSize: 10,
   },
@@ -3402,7 +3402,7 @@ const styles = {
   },
 
   heroStatLabel: {
-    color: "#BDD0BF",
+    color: "var(--ad-subtle)",
 
     fontSize: 9,
 
@@ -3498,7 +3498,7 @@ const styles = {
       COLORS.redSoft,
 
     border:
-      "1px solid #FECACA",
+      "1px solid var(--ad-border)",
   },
 
   errorContent: {
@@ -3525,10 +3525,10 @@ const styles = {
     borderRadius: 10,
 
     background:
-      "#FEE2E2",
+      "var(--ad-raised)",
 
     color:
-      COLORS.red,
+      "var(--ad-danger)",
 
     fontWeight: 900,
   },
@@ -3538,13 +3538,13 @@ const styles = {
 
     fontWeight: 900,
 
-    color: "#991B1B",
+    color: "var(--ad-danger)",
   },
 
   errorText: {
     marginTop: 2,
 
-    color: "#B45353",
+    color: "var(--ad-danger)",
 
     fontSize: 10,
   },
@@ -3555,7 +3555,7 @@ const styles = {
     padding: "0 11px",
 
     border:
-      "1px solid #FECACA",
+      "1px solid var(--ad-border)",
 
     borderRadius: 9,
 
@@ -3563,7 +3563,7 @@ const styles = {
       COLORS.surface,
 
     color:
-      COLORS.red,
+      "var(--ad-danger)",
 
     cursor: "pointer",
 
@@ -3615,7 +3615,7 @@ const styles = {
     marginBottom: 2,
 
     color:
-      COLORS.orangeDark,
+      "var(--ad-warn)",
 
     fontSize: 9,
 
@@ -3626,7 +3626,7 @@ const styles = {
 
   sectionTitle: {
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
 
     fontSize: 19,
 
@@ -3684,7 +3684,7 @@ const styles = {
       `1px solid ${COLORS.borderSoft}`,
 
     background:
-      "#FAFCFA",
+      "var(--ad-surface)",
   },
 
   infoIcon: {
@@ -3757,7 +3757,7 @@ const styles = {
     marginBottom: 9,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
 
     fontSize: 10,
 
@@ -3924,7 +3924,7 @@ const styles = {
     borderRadius: 15,
 
     background:
-      "#FAFCFA",
+      "var(--ad-surface)",
 
     border:
       `1px solid ${COLORS.borderSoft}`,
@@ -3988,7 +3988,7 @@ const styles = {
       COLORS.orangeSoft,
 
     border:
-      "1px solid #F4D7AC",
+      "1px solid var(--ad-border)",
   },
 
   currentClientIcon: {
@@ -4019,7 +4019,7 @@ const styles = {
 
   currentClientEyebrow: {
     color:
-      COLORS.orangeDark,
+      "var(--ad-warn)",
 
     fontSize: 8,
 
@@ -4043,7 +4043,7 @@ const styles = {
     marginTop: 2,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
 
     fontSize: 15,
 
@@ -4096,7 +4096,7 @@ const styles = {
       COLORS.redSoft,
 
     color:
-      COLORS.red,
+      "var(--ad-danger)",
 
     fontSize: 22,
 
@@ -4107,7 +4107,7 @@ const styles = {
     marginTop: 13,
 
     color:
-      COLORS.greenDark,
+      "var(--ad-accent-text)",
 
     fontSize: 17,
 
@@ -4168,7 +4168,7 @@ const styles = {
       COLORS.surface,
 
     color:
-      COLORS.green,
+      "var(--ad-accent-text)",
 
     cursor: "pointer",
 

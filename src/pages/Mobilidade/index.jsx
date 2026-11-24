@@ -287,8 +287,8 @@ function Motoristas() {
                 {[foto,crlv].filter(Boolean).map(doc=>previews[doc._id] && <div key={doc._id} style={{flex:'1 1 260px',minWidth:0}}>
                   <strong>{doc.tipo==='crlv'?'CRLV':'Foto do veículo com placa'}</strong>
                   {previews[doc._id].mime==='application/pdf'
-                    ? <iframe title="CRLV para conferência" src={previews[doc._id].url} style={{width:'100%',height:320,border:'1px solid #ccc',borderRadius:8}} />
-                    : <img alt={doc.tipo==='crlv'?'Imagem do CRLV':'Foto do veículo mostrando a placa'} src={previews[doc._id].url} style={{display:'block',width:'100%',maxHeight:370,objectFit:'contain',borderRadius:8,border:'1px solid #ccc'}} />}
+                    ? <iframe title="CRLV para conferência" src={previews[doc._id].url} style={{width:'100%',height:320,border:"1px solid var(--ad-border)",borderRadius:8}} />
+                    : <img alt={doc.tipo==='crlv'?'Imagem do CRLV':'Foto do veículo mostrando a placa'} src={previews[doc._id].url} style={{display:'block',width:'100%',maxHeight:370,objectFit:'contain',borderRadius:8,border:"1px solid var(--ad-border)"}} />}
                 </div>)}
               </div>
               <label className="mam-check" style={{display:'flex',alignItems:'flex-start',gap:10,marginTop:12}}>

@@ -157,7 +157,7 @@ export default function FinanceTransactions() {
                         <div
                           style={{
                             fontSize: 11,
-                            color: "#94A3B8",
+                            color: "var(--ad-muted)",
                             marginTop: 4,
                           }}
                         >
@@ -184,7 +184,7 @@ export default function FinanceTransactions() {
                             <div
                               style={{
                                 fontSize: 12,
-                                color: "#6B7280",
+                                color: "var(--ad-muted)",
                                 marginTop: 3,
                               }}
                             >
@@ -195,7 +195,7 @@ export default function FinanceTransactions() {
                         ) : (
                           <span
                             style={{
-                              color: "#DC2626",
+                              color: "var(--ad-danger)",
                               fontWeight: 700,
                             }}
                           >
@@ -314,52 +314,52 @@ function StatusBadge({ status }) {
   const config = {
     approved: {
       label: "Aprovado",
-      color: "#15803D",
+      color: "var(--ad-accent-text)",
       background: "#DCFCE7",
     },
 
     pending: {
       label: "Pendente",
-      color: "#92400E",
+      color: "var(--ad-warn)",
       background: "#FEF3C7",
     },
 
     in_process: {
       label: "Processando",
-      color: "#1D4ED8",
+      color: "var(--ad-blue)",
       background: "#DBEAFE",
     },
 
     rejected: {
       label: "Rejeitado",
-      color: "#DC2626",
-      background: "#FEE2E2",
+      color: "var(--ad-danger)",
+      background: "var(--ad-raised)",
     },
 
     failed: {
       label: "Falhou",
-      color: "#DC2626",
-      background: "#FEE2E2",
+      color: "var(--ad-danger)",
+      background: "var(--ad-raised)",
     },
 
     cancelled: {
       label: "Cancelado",
-      color: "#6B7280",
-      background: "#F3F4F6",
+      color: "var(--ad-muted)",
+      background: "var(--ad-raised)",
     },
 
     refunded: {
       label: "Reembolsado",
-      color: "#7C3AED",
-      background: "#EDE9FE",
+      color: "var(--ad-purple)",
+      background: "var(--ad-raised)",
     },
   };
 
   const current =
     config[status] || {
       label: status || "—",
-      color: "#374151",
-      background: "#F3F4F6",
+      color: "var(--ad-text)",
+      background: "var(--ad-raised)",
     };
 
   return (
@@ -390,7 +390,7 @@ function AccessStatus({
     return (
       <span
         style={{
-          color: "#6B7280",
+          color: "var(--ad-muted)",
         }}
       >
         —
@@ -405,7 +405,7 @@ function AccessStatus({
       <div>
         <div
           style={{
-            color: "#15803D",
+            color: "var(--ad-accent-text)",
             fontWeight: 800,
           }}
         >
@@ -416,7 +416,7 @@ function AccessStatus({
           <div
             style={{
               fontSize: 11,
-              color: "#6B7280",
+              color: "var(--ad-muted)",
               marginTop: 3,
             }}
           >
@@ -434,7 +434,7 @@ function AccessStatus({
     <div>
       <div
         style={{
-          color: "#DC2626",
+          color: "var(--ad-danger)",
           fontWeight: 800,
         }}
       >
@@ -445,7 +445,7 @@ function AccessStatus({
         <div
           style={{
             fontSize: 11,
-            color: "#991B1B",
+            color: "var(--ad-danger)",
             marginTop: 3,
           }}
         >
@@ -566,8 +566,8 @@ function formatReason(reason) {
 ========================================================= */
 
 const page = {
-  background: "#F9FAFB",
-  color: "#111827",
+  background: "var(--ad-surface)",
+  color: "var(--ad-text)",
   minHeight: "100vh",
   padding: 24,
 };
@@ -575,13 +575,13 @@ const page = {
 const title = {
   fontSize: 24,
   fontWeight: 900,
-  color: "#14532D",
+  color: "var(--ad-accent-text)",
   marginBottom: 4,
 };
 
 const subtitle = {
   margin: 0,
-  color: "#4B5563",
+  color: "var(--ad-text)",
 };
 
 const summaryGrid = {
@@ -593,16 +593,16 @@ const summaryGrid = {
 };
 
 const summaryCard = {
-  background: "#FFFFFF",
+  background: "var(--ad-surface)",
   border:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   borderRadius: 12,
   padding: 18,
 };
 
 const summaryLabel = {
   fontSize: 13,
-  color: "#6B7280",
+  color: "var(--ad-muted)",
   display: "block",
   marginBottom: 6,
 };
@@ -613,9 +613,9 @@ const summaryValue = {
 };
 
 const tableWrapper = {
-  background: "#FFFFFF",
+  background: "var(--ad-surface)",
   border:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   borderRadius: 12,
   overflow: "hidden",
 };
@@ -628,7 +628,7 @@ const table = {
   width: "100%",
   minWidth: 1100,
   borderCollapse: "collapse",
-  color: "#111827",
+  color: "var(--ad-text)",
 };
 
 const th = {
@@ -636,31 +636,31 @@ const th = {
   textAlign: "left",
   fontSize: 12,
   fontWeight: 800,
-  background: "#F3F4F6",
-  color: "#374151",
+  background: "var(--ad-raised)",
+  color: "var(--ad-text)",
   whiteSpace: "nowrap",
 };
 
 const td = {
   padding: 12,
   borderTop:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   fontSize: 13,
-  color: "#111827",
+  color: "var(--ad-text)",
   verticalAlign: "middle",
 };
 
 const empty = {
   padding: 24,
   textAlign: "center",
-  color: "#6B7280",
+  color: "var(--ad-muted)",
 };
 
 const errorBox = {
-  color: "#DC2626",
-  background: "#FEF2F2",
+  color: "var(--ad-danger)",
+  background: "var(--ad-raised)",
   border:
-    "1px solid #FECACA",
+    "1px solid var(--ad-border)",
   padding: 16,
   borderRadius: 12,
 };

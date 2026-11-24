@@ -11,17 +11,17 @@ export default function Page({ title, subtitle, children }) {
 /* ================= STYLES ================= */
 
 const page = {
-  color: "#111827",
+  color: "var(--ad-text)",
 };
 
 const titleStyle = {
   fontSize: 22,
   fontWeight: 900,
-  color: "#14532D",
+  color: "var(--ad-accent-text)",
   marginBottom: 4,
 };
 
 const subtitleStyle = {
   marginBottom: 20,
-  color: "#4B5563",
+  color: "var(--ad-text)",
 };

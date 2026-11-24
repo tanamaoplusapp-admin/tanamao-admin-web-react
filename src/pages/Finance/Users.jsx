@@ -29,11 +29,11 @@ export default function Users() {
       {/* CARD PRINCIPAL (MESMO PADRÃO DO FINANCEIRO) */}
       <div
         style={{
-          background: "#fff",
+          background: "var(--ad-surface)",
           borderRadius: 16,
           padding: 24,
           boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-          border: "1px solid #E5E7EB",
+          border: "1px solid var(--ad-border)",
         }}
       >
         {/* HEADER INTERNO */}
@@ -41,7 +41,7 @@ export default function Users() {
           <h2 style={{ fontSize: 16, fontWeight: 700 }}>
             Lista de usuários
           </h2>
-          <p style={{ fontSize: 13, color: "#6B7280" }}>
+          <p style={{ fontSize: 13, color: "var(--ad-muted)" }}>
             Clique em detalhes para gerenciar o usuário
           </p>
         </div>
@@ -55,7 +55,7 @@ export default function Users() {
           }}
         >
           <thead>
-            <tr style={{ borderBottom: "1px solid #E5E7EB" }}>
+            <tr style={{ borderBottom: "1px solid var(--ad-border)" }}>
               <Th>Usuário</Th>
               <Th>Role</Th>
               <Th>Status</Th>
@@ -69,14 +69,14 @@ export default function Users() {
             {users.map((u) => (
               <tr
                 key={u._id}
-                style={{ borderBottom: "1px solid #F1F5F9" }}
+                style={{ borderBottom: "1px solid var(--ad-border)" }}
               >
                 <Td>
                   <div style={{ fontWeight: 600 }}>{u.name}</div>
                   <div
                     style={{
                       fontSize: 12,
-                      color: "#6B7280",
+                      color: "var(--ad-muted)",
                     }}
                   >
                     {u.email}
@@ -119,7 +119,7 @@ export default function Users() {
         </table>
 
         {users.length === 0 && (
-          <div style={{ padding: 16, color: "#6B7280" }}>
+          <div style={{ padding: 16, color: "var(--ad-muted)" }}>
             Nenhum usuário encontrado.
           </div>
         )}
@@ -138,7 +138,7 @@ function Th({ children, align }) {
         padding: "12px 8px",
         fontSize: 13,
         fontWeight: 700,
-        color: "#374151",
+        color: "var(--ad-text)",
       }}
     >
       {children}
@@ -164,7 +164,7 @@ function Badge({ children }) {
   return (
     <span
       style={{
-        background: "#F1F5F9",
+        background: "var(--ad-raised)",
         padding: "4px 10px",
         borderRadius: 999,
         fontSize: 12,
@@ -187,7 +187,7 @@ function Status({ status }) {
     <span
       style={{
         fontWeight: 700,
-        color: colors[status] || "#374151",
+        color: colors[status] || "var(--ad-text)",
       }}
     >
       {status}

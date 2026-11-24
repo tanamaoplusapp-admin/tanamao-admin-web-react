@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import {useTheme} from "../layout/theme";
+import logo from "../assets/icon.png";
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const {theme,setTheme}=useTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +37,7 @@ export default function Login() {
   return (
     <div style={page}>
       <div style={card}>
+        <img src={logo} alt="Tanamão+" style={{width:64,height:64,borderRadius:16}}/>
         <h1 style={title}>Central Tanamão+</h1>
         <p style={subtitle}>Painel administrativo</p>
 
@@ -64,6 +68,7 @@ export default function Login() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
+        <label style={{display:"flex",gap:8,justifyContent:"center",alignItems:"center",fontSize:12,marginTop:20,color:"var(--ad-muted)"}}>Tema <select value={theme} onChange={e=>setTheme(e.target.value)} aria-label="Tema do painel" style={{border:"1px solid var(--ad-border)",background:"var(--ad-surface)",padding:6,borderRadius:8}}><option value="system">Sistema</option><option value="light">Claro</option><option value="dark">Escuro</option><option value="forest">Verde</option></select></label>
       </div>
     </div>
   );
@@ -78,35 +83,37 @@ const page = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(180deg, #2E4F2F 0%, #1F3A1F 100%)",
+  background: "linear-gradient(130deg, #173b29, #2c6a49)",
 };
 
 const card = {
-  background: "#fff",
+  background: "var(--ad-surface)",
   padding: 36,
   borderRadius: 20,
-  width: 380,
+  width: "min(420px, calc(100% - 32px))",
   textAlign: "center",
 };
 
 const title = {
   fontSize: 24,
   fontWeight: 900,
-  color: "#2E4F2F",
+  color: "var(--ad-text)",
 };
 
 const subtitle = {
   fontSize: 14,
-  color: "#6B7280",
+  color: "var(--ad-muted)",
   marginBottom: 20,
 };
 
 const input = {
+  background:"var(--ad-raised)",
+  color:"var(--ad-text)",
   width: "100%",
   padding: 14,
   marginBottom: 14,
   borderRadius: 10,
-  border: "1px solid #CBD5E1",
+  border: "1px solid var(--ad-border)",
 };
 
 const button = {
@@ -120,8 +127,8 @@ const button = {
 };
 
 const errorBox = {
-  background: "#FEE2E2",
-  color: "#991B1B",
+  background: "var(--ad-raised)",
+  color: "var(--ad-danger)",
   padding: 10,
   borderRadius: 8,
   fontSize: 13,

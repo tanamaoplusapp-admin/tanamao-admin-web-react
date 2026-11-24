@@ -115,8 +115,8 @@ export default function FinanceReconciliation() {
           value={total}
           color={
             total > 0
-              ? "#DC2626"
-              : "#15803D"
+              ? "var(--ad-danger)"
+              : "var(--ad-accent-text)"
           }
         />
 
@@ -129,8 +129,8 @@ export default function FinanceReconciliation() {
           }
           color={
             total > 0
-              ? "#DC2626"
-              : "#15803D"
+              ? "var(--ad-danger)"
+              : "var(--ad-accent-text)"
           }
         />
       </div>
@@ -173,7 +173,7 @@ export default function FinanceReconciliation() {
             <h3
               style={{
                 margin: 0,
-                color: "#14532D",
+                color: "var(--ad-accent-text)",
                 fontSize: 16,
               }}
             >
@@ -247,7 +247,7 @@ export default function FinanceReconciliation() {
                             <div
                               style={{
                                 fontSize: 12,
-                                color: "#6B7280",
+                                color: "var(--ad-muted)",
                                 marginTop: 3,
                               }}
                             >
@@ -258,7 +258,7 @@ export default function FinanceReconciliation() {
                         ) : (
                           <span
                             style={{
-                              color: "#DC2626",
+                              color: "var(--ad-danger)",
                               fontWeight: 700,
                             }}
                           >
@@ -294,7 +294,7 @@ export default function FinanceReconciliation() {
                       <td style={td}>
                         <span
                           style={{
-                            color: "#DC2626",
+                            color: "var(--ad-danger)",
                             fontWeight: 700,
                           }}
                         >
@@ -421,8 +421,8 @@ function formatReason(reason) {
 ========================================================= */
 
 const page = {
-  background: "#F9FAFB",
-  color: "#111827",
+  background: "var(--ad-surface)",
+  color: "var(--ad-text)",
   minHeight: "100vh",
   padding: 24,
 };
@@ -430,13 +430,13 @@ const page = {
 const title = {
   fontSize: 24,
   fontWeight: 900,
-  color: "#14532D",
+  color: "var(--ad-accent-text)",
   marginBottom: 4,
 };
 
 const subtitle = {
   margin: 0,
-  color: "#4B5563",
+  color: "var(--ad-text)",
   maxWidth: 700,
 };
 
@@ -449,16 +449,16 @@ const grid = {
 };
 
 const card = {
-  background: "#FFFFFF",
+  background: "var(--ad-surface)",
   border:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   borderRadius: 12,
   padding: 20,
 };
 
 const cardLabel = {
   fontSize: 13,
-  color: "#6B7280",
+  color: "var(--ad-muted)",
   marginBottom: 6,
   display: "block",
 };
@@ -469,10 +469,10 @@ const cardValue = {
 };
 
 const alertBox = {
-  background: "#FFFBEB",
+  background: "var(--ad-raised)",
   border:
-    "1px solid #FDE68A",
-  color: "#92400E",
+    "1px solid var(--ad-border)",
+  color: "var(--ad-warn)",
   padding: 16,
   borderRadius: 12,
   fontSize: 14,
@@ -480,10 +480,10 @@ const alertBox = {
 };
 
 const successBox = {
-  background: "#F0FDF4",
+  background: "var(--ad-soft)",
   border:
-    "1px solid #BBF7D0",
-  color: "#166534",
+    "1px solid var(--ad-border)",
+  color: "var(--ad-accent-text)",
   padding: 16,
   borderRadius: 12,
   fontSize: 14,
@@ -491,18 +491,18 @@ const successBox = {
 };
 
 const errorBox = {
-  background: "#FEF2F2",
+  background: "var(--ad-raised)",
   border:
-    "1px solid #FECACA",
-  color: "#DC2626",
+    "1px solid var(--ad-border)",
+  color: "var(--ad-danger)",
   padding: 16,
   borderRadius: 12,
 };
 
 const tableWrapper = {
-  background: "#FFFFFF",
+  background: "var(--ad-surface)",
   border:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   borderRadius: 12,
   overflow: "hidden",
 };
@@ -510,7 +510,7 @@ const tableWrapper = {
 const tableHeader = {
   padding: 18,
   borderBottom:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
 };
 
 const tableScroll = {
@@ -528,15 +528,15 @@ const th = {
   textAlign: "left",
   fontSize: 12,
   fontWeight: 800,
-  background: "#F3F4F6",
-  color: "#374151",
+  background: "var(--ad-raised)",
+  color: "var(--ad-text)",
   whiteSpace: "nowrap",
 };
 
 const td = {
   padding: 12,
   borderTop:
-    "1px solid #E5E7EB",
+    "1px solid var(--ad-border)",
   fontSize: 13,
   verticalAlign: "middle",
 };
